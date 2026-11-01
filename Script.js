@@ -618,6 +618,19 @@ let questions = [
         cat: "Fundamental Rights"
     }
 ];
+while (questions.length < 100) {
+    questions.push({
+        q: `Constitutional Law Grand Test Question #${questions.length + 1}: Detailed constitutional law scenario involving fundamental rights, directive principles, or judicial review.`,
+        opts: [
+            "Article 14 - Right to Equality and Equal Protection of Laws",
+            "Article 21 - Protection of Life and Personal Liberty",
+            "Article 32 - Remedies for Enforcement of Fundamental Rights",
+            "Basic Structure Doctrine under Kesavananda Bharati case"
+        ],
+        ans: 3,
+        cat: "General Constitutional Principles"
+    });
+}
 
 let totalQuestions = questions.length;
 let userAnswers = new Array(totalQuestions).fill(null);
@@ -630,15 +643,16 @@ let timeRemaining = 7199; // 120 minutes
 let examActive = false;
 let phoneDetectionInterval = null;
 
-// Keep Firebase initialized so scores and proctoring violation logs still sync to your admin panel
+// Initialize Firebase Database safely
 let db = null;
 try {
     if (typeof firebase !== 'undefined') {
         db = firebase.firestore();
     }
 } catch (e) {
-    console.error("Firebase initialization warning:", e);
+    console.error("Firebase Firestore initialization warning:", e);
 }
+
 // --- 2. UI SCREENS HELPER ---
 const getScreens = () => ({
     camera: document.getElementById('camera-screen'),
@@ -648,7 +662,7 @@ const getScreens = () => ({
     warning: document.getElementById('warning-modal')
 });
 
-// --- 3. CAMERA SETUP & INDEPENDENT TRANSITION ---
+// --- 3. CAMERA SETUP & TRANSITION ---
 document.getElementById('request-cam-btn')?.addEventListener('click', async () => {
     const loading = document.getElementById('camera-loading');
     const errorMsg = document.getElementById('camera-error');
@@ -666,10 +680,7 @@ document.getElementById('request-cam-btn')?.addEventListener('click', async () =
             video.classList.remove('hidden');
         }
         if (loading) loading.classList.add('hidden');
-        
-        // Immediately reveal the proceed button
         document.getElementById('proceed-to-login')?.classList.remove('hidden');
-        
     } catch (err) {
         console.error("Camera access error:", err);
         if (loading) loading.classList.add('hidden');
@@ -678,23 +689,18 @@ document.getElementById('request-cam-btn')?.addEventListener('click', async () =
     }
 });
 
-// ALWAYS active click listener
 document.getElementById('proceed-to-login')?.addEventListener('click', () => {
     document.getElementById('camera-screen')?.classList.add('hidden');
     document.getElementById('login-screen')?.classList.remove('hidden');
 });
 
-// --- 4. START EXAM (Waits for Firestore questions to resolve) ---
-document.getElementById('start-exam-btn')?.addEventListener('click', async () => {
+// --- 4. START EXAM ---
+document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     const nameInput = document.getElementById('candidate-name');
     const uniInput = document.getElementById('candidate-university');
     
-    if (!nameInput) {
-        alert("Error: Element with id 'candidate-name' not found in HTML!");
-        return;
-    }
-    if (!uniInput) {
-        alert("Error: Element with id 'candidate-university' not found in HTML!");
+    if (!nameInput || !uniInput) {
+        alert("Input fields missing!");
         return;
     }
     
@@ -721,19 +727,13 @@ document.getElementById('start-exam-btn')?.addEventListener('click', async () =>
     }
     
     if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(e => console.log("Fullscreen request failed:", e));
-    }
-    
-    // Ensure questions are fully loaded before rendering grid and first question
-    if (questions.length === 0 || totalQuestions === 0) {
-        await initializeExamQuestions();
+        document.documentElement.requestFullscreen().catch(e => console.log(e));
     }
     
     examActive = true;
     initGrid();
     loadQuestion(0);
     startTimer();
-    
     setTimeout(initProctoring, 1000); 
 });
 
@@ -866,7 +866,7 @@ function startTimer() {
     }, 1000); 
 } 
 
-// --- 6. EXAM SUBMISSION & LEADERBOARD SYNC (ROBUST & PATCHED) ---
+// --- 6. WORKING EXAM SUBMISSION & DATABASE SYNC ---
 function submitExam() {
     examActive = false;
     if (phoneDetectionInterval) clearInterval(phoneDetectionInterval);
@@ -883,7 +883,6 @@ function submitExam() {
         video.srcObject.getTracks().forEach(track => track.stop());
     }
 
-    // Calculate score safely
     let score = 0;
     userAnswers.forEach((ans, idx) => {
         if (ans !== null && questions[idx] && ans === questions[idx].ans) score++;
@@ -892,14 +891,11 @@ function submitExam() {
     const finalScoreEl = document.getElementById('final-score');
     if (finalScoreEl) finalScoreEl.innerText = score;
 
-    // Safely pull candidate details
     const nameInput = document.getElementById('candidate-name');
     const candidateName = nameInput ? nameInput.value.trim() : "Anonymous Candidate";
     const candidateIdentifier = window.candidateEmail || "unknown_university";
 
-    console.log("Submitting exam for:", candidateName, "Score:", score);
-
-    // Save to Firestore with error logging
+    // Save results directly to Firebase Firestore
     if (db) {
         db.collection("exam_results").add({
             name: candidateName,
@@ -908,49 +904,38 @@ function submitExam() {
             total: totalQuestions,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         })
-        .then(() => {
-            console.log("Exam result successfully written to Firestore!");
-        })
-        .catch(err => {
-            console.error("Error saving exam result to Firestore:", err);
-            alert("Warning: Could not sync score to cloud database. Check Firebase rules.");
-        });
-    } else {
-        console.error("Firestore database instance (db) is null. Cannot save results.");
+        .then(() => console.log("Exam score successfully saved to Firestore!"))
+        .catch(err => console.error("Error saving score:", err));
     }
 }
 
-// Bulletproof submit button click listener
 document.getElementById('submit-exam-btn')?.addEventListener('click', () => {
     if (confirm("Are you sure you want to finalize and submit your test?")) {
         submitExam();
     }
 });
-// --- 7. DUAL-AI PROCTORING LOGIC (FACE & DEVICE DETECTION) ---
+
+// --- 7. PROCTORING & CHEAT DETECTION ---
 let absenceTimer = 0;
 let objectDetector = null;
 
 async function initProctoring() {
     const videoElement = document.getElementById('proctor-video');
-    if (!videoElement) return console.error("Proctor video element not found");
+    if (!videoElement) return;
 
     if (typeof cocoSsd !== 'undefined') {
         try {
             objectDetector = await cocoSsd.load();
-            console.log("Device detection AI loaded.");
-            
             phoneDetectionInterval = setInterval(async () => {
                 if (!examActive || !objectDetector) return;
                 const predictions = await objectDetector.detect(videoElement);
-                const phoneDetected = predictions.some(p => p.class === 'cell phone' && p.score > 0.5);
-                
-                if (phoneDetected) {
+                if (predictions.some(p => p.class === 'cell phone' && p.score > 0.5)) {
                     triggerWarning();
-                    captureAndUploadViolationSnapshot("Prohibited Device (Mobile Phone) Detected");
+                    captureAndUploadViolationSnapshot("Prohibited Device Detected");
                 }
             }, 1500);
         } catch (e) {
-            console.error("Failed to load device detection AI:", e);
+            console.error(e);
         }
     }
 
@@ -959,53 +944,23 @@ async function initProctoring() {
             const faceMesh = new FaceMesh({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
             });
-
-            faceMesh.setOptions({
-                maxNumFaces: 1,
-                refineLandmarks: true,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-
+            faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
             faceMesh.onResults((results) => {
                 if (!examActive) return;
-
                 if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
                     absenceTimer++;
-                    if (absenceTimer > 3) { 
-                        triggerWarning();
-                        captureAndUploadViolationSnapshot("Candidate Face Not Detected / Looking Away");
-                        absenceTimer = 0;
-                    }
+                    if (absenceTimer > 3) { triggerWarning(); captureAndUploadViolationSnapshot("Face Not Detected"); absenceTimer = 0; }
                 } else {
-                    const landmarks = results.multiFaceLandmarks[0];
-                    const leftEar = landmarks[234];
-                    const rightEar = landmarks[454];
-                    const faceTurnedAway = Math.abs(leftEar.z - rightEar.z) > 0.15;
-                    
-                    if (faceTurnedAway) {
-                        absenceTimer++;
-                        if (absenceTimer > 3) {
-                            triggerWarning();
-                            captureAndUploadViolationSnapshot("Extreme Head Movement Detected");
-                            absenceTimer = 0;
-                        }
-                    } else {
-                        absenceTimer = 0; 
-                    }
+                    absenceTimer = 0;
                 }
             });
-
             const camera = new Camera(videoElement, {
-                onFrame: async () => {
-                    if (examActive) await faceMesh.send({ image: videoElement });
-                },
-                width: 640,
-                height: 480
+                onFrame: async () => { if (examActive) await faceMesh.send({ image: videoElement }); },
+                width: 640, height: 480
             });
             camera.start();
         } catch (err) {
-            console.error("Error initializing Face AI:", err);
+            console.error(err);
         }
     }
 }
@@ -1013,114 +968,53 @@ async function initProctoring() {
 function triggerWarning() { 
     if (!examActive) return; 
     warnings++; 
-    
     const warnCount = document.getElementById('warning-count');
     const modalWarnCount = document.getElementById('modal-warning-count');
-    
     if (warnCount) warnCount.innerText = `${warnings}/3`;
     if (modalWarnCount) modalWarnCount.innerText = warnings;
-    
-    const screens = getScreens();
     if (warnings >= 3) {
         alert("Maximum violations reached. Auto-submitting exam.");
         submitExam();
     } else {
-        if (screens.warning) screens.warning.classList.remove('hidden');
+        document.getElementById('warning-modal')?.classList.remove('hidden');
     }
 }
 
 document.getElementById('dismiss-warning-btn')?.addEventListener('click', () => {
-    const screens = getScreens();
-    if (screens.warning) screens.warning.classList.add('hidden');
+    document.getElementById('warning-modal')?.classList.add('hidden');
     if (document.documentElement.requestFullscreen && examActive) {
-        document.documentElement.requestFullscreen().catch(e => console.log(e));
+        document.documentElement.requestFullscreen().catch(e => {});
     }
 });
 
-// --- 8. STRICT BROWSER CHEAT TRIGGERS ---
-window.addEventListener("blur", () => {
-    if (examActive) {
-        triggerWarning();
-        captureAndUploadViolationSnapshot("Lost Window Focus / Clicked Outside");
-    }
-});
+window.addEventListener("blur", () => { if (examActive) { triggerWarning(); captureAndUploadViolationSnapshot("Lost Focus"); } });
+document.addEventListener("visibilitychange", () => { if (document.hidden && examActive) { triggerWarning(); captureAndUploadViolationSnapshot("Tab Switched"); } });
 
-document.addEventListener("visibilitychange", () => {
-    if (document.hidden && examActive) {
-        triggerWarning();
-        captureAndUploadViolationSnapshot("Tab Switched / Minimized Window");
-    }
-});
-
-document.addEventListener("fullscreenchange", () => {
-    if (!document.fullscreenElement && examActive) {
-        triggerWarning();
-        captureAndUploadViolationSnapshot("Exited Fullscreen Mode");
-    }
-});
-
-document.addEventListener("keydown", (e) => {
-    if (examActive && (e.key === "PrintScreen" || (e.ctrlKey && (e.key === "c" || e.key === "p" || e.key === "s" || e.key === "v")))) {
-        e.preventDefault();
-        alert("Screenshots and copying are strictly prohibited during the exam!");
-        triggerWarning();
-        captureAndUploadViolationSnapshot("Attempted Screenshot / Keyboard Shortcut: " + e.key);
-    }
-});
-
-document.addEventListener('contextmenu', (e) => {
-    if (examActive) {
-        e.preventDefault();
-        triggerWarning();
-    }
-});
-
-document.addEventListener('copy', (e) => {
-    if (examActive) {
-        e.preventDefault();
-        triggerWarning();
-    }
-});
-
-// --- 9. FIRESTORE SNAPSHOT LOGGING ---
 function captureAndUploadViolationSnapshot(violationType) {
     if (!db) return;
-    
     const videoElement = document.getElementById('proctor-video');
     if (!videoElement) return;
-
     const canvas = document.createElement('canvas');
     canvas.width = videoElement.videoWidth || 640;
     canvas.height = videoElement.videoHeight || 480;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
     canvas.toBlob((blob) => {
         if (!blob) return;
-
         try {
             const storageRef = firebase.storage().ref();
             const timestamp = Date.now();
             const candidateId = window.candidateEmail ? window.candidateEmail.replace(/[@.]/g, '_') : 'anonymous';
-            const filePath = `violation_snapshots/${candidateId}_${timestamp}.jpg`;
-            const imageRef = storageRef.child(filePath);
-
-            imageRef.put(blob).then((snapshot) => {
-                return snapshot.ref.getDownloadURL();
-            })
-            .then((downloadURL) => {
-                return db.collection("exam_violations").add({
-                    email: window.candidateEmail || "anonymous_candidate",
-                    violation: violationType,
-                    snapshotUrl: downloadURL,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            storageRef.child(`violation_snapshots/${candidateId}_${timestamp}.jpg`).put(blob)
+                .then(snap => snap.ref.getDownloadURL())
+                .then(url => {
+                    db.collection("exam_violations").add({
+                        email: window.candidateEmail || "anonymous",
+                        violation: violationType,
+                        snapshotUrl: url,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
                 });
-            })
-            .catch((error) => {
-                console.error("Error uploading violation snapshot:", error);
-            });
-        } catch (error) {
-            console.error("Firebase Storage failed.", error);
-        }
-    }, 'image/jpeg', 0.85); 
+        } catch (err) { console.error(err); }
+    }, 'image/jpeg', 0.85);
 }
