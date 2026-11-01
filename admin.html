@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Admin - Vidhiora Grand Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { navy: '#0b1120', panel: '#1e293b', gold: '#fbbf24' } } }
+        }
+    </script>
+
+    <!-- Firebase SDK Compat (Added Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+
+<body class="bg-navy text-gray-200 min-h-screen p-8 font-sans">
+
+    <!-- LOGIN SCREEN -->
+    <div id="admin-login-screen" class="max-w-md mx-auto bg-panel p-8 rounded-lg shadow-lg mt-20 text-center">
+        <h2 class="text-2xl font-bold text-white mb-2">Vidhiora Admin Portal</h2>
+        <p class="text-gray-400 text-sm mb-6">Restricted Access. Authenticate via Email Link.</p>
+
+        <input type="email" id="admin-email-input" placeholder="Enter your authorized admin email"
+            class="w-full mb-4 px-4 py-2 bg-navy border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+        <button id="send-link-btn"
+            class="bg-blue-600 text-white px-6 py-2 rounded font-bold w-full hover:bg-blue-500">Send Secure Login
+            Link</button>
+        <p id="login-msg" class="mt-4 text-sm font-semibold hidden"></p>
+        <div class="mt-6 text-xs text-gray-500">
+            <a href="index.html" class="hover:text-gold">← Return to Exam Home</a>
+        </div>
+    </div>
+
+    <!-- SECURE ADMIN DASHBOARD (Hidden until authenticated) -->
+    <div id="admin-dashboard-content" class="hidden max-w-5xl mx-auto mt-10">
+
+        <!-- Header / Logout -->
+        <div class="flex justify-between items-center mb-6 bg-panel border border-gray-700 p-4 rounded-lg shadow-md">
+            <span class="text-sm text-green-400 font-mono">Verified Admin: <span id="verified-email"></span></span>
+            <button id="logout-btn"
+                class="bg-red-600 hover:bg-red-500 text-white px-4 py-1 rounded text-xs font-bold transition">Logout</button>
+        </div>
+
+        <!-- AI Generator Section -->
+        <div class="mb-8 border border-gray-700 p-6 rounded-lg bg-navy/50 shadow-md">
+            <h3 class="text-xl font-semibold text-gold mb-4">✨ AI Question Generator</h3>
+            <input type="text" id="ai-topic" placeholder="Enter topic (e.g., Article 21 Right to Privacy)"
+                class="w-full mb-4 px-4 py-2 bg-panel border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+            <button id="generate-ai-btn"
+                class="bg-gold text-navy px-6 py-2 rounded font-bold hover:bg-yellow-500 w-full mb-4">Generate Question
+                via AI</button>
+        </div>
+
+        <!-- Bulk Import Section -->
+        <div class="mb-8 border border-gray-700 p-6 rounded-lg bg-navy/50 shadow-md">
+            <h3 class="text-xl font-semibold text-gold mb-2">📦 Bulk Import Questions (JSON Format)</h3>
+            <p class="text-xs text-gray-400 mb-4">Paste an array of questions in JSON format below to instantly populate
+                your question bank.</p>
+            <textarea id="bulk-json-input"
+                placeholder='[{"q": "Your question?", "opts": ["A", "B", "C", "D"], "ans": 0, "cat": "Law"}]'
+                class="w-full px-4 py-2 bg-panel border border-gray-600 rounded text-white h-32 font-mono text-xs focus:outline-none focus:border-gold mb-4"></textarea>
+            <button id="import-bulk-btn"
+                class="bg-purple-600 text-white px-6 py-2 rounded font-bold hover:bg-purple-500 w-full">Import All
+                Questions Automatically</button>
+        </div>
+
+        <!-- Manual Entry Section -->
+        <div class="mb-8 border border-gray-700 p-6 rounded-lg bg-navy/50 shadow-md">
+            <h3 class="text-xl font-semibold text-white mb-4">📝 Manual Question Entry</h3>
+            <div class="space-y-4">
+                <textarea id="admin-q-text" placeholder="Question Text"
+                    class="w-full px-4 py-2 bg-panel border border-gray-600 rounded text-white h-24 focus:outline-none focus:border-gold"></textarea>
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="admin-opt-0" placeholder="Option A"
+                        class="w-full px-4 py-2 bg-panel border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+                    <input type="text" id="admin-opt-1" placeholder="Option B"
+                        class="w-full px-4 py-2 bg-panel border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+                    <input type="text" id="admin-opt-2" placeholder="Option C"
+                        class="w-full px-4 py-2 bg-panel border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+                    <input type="text" id="admin-opt-3" placeholder="Option D"
+                        class="w-full px-4 py-2 bg-panel border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+                </div>
+                <div class="flex gap-4">
+                    <select id="admin-correct"
+                        class="px-4 py-2 bg-panel border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+                        <option value="0">Correct: A</option>
+                        <option value="1">Correct: B</option>
+                        <option value="2">Correct: C</option>
+                        <option value="3">Correct: D</option>
+                    </select>
+                    <input type="text" id="admin-category" placeholder="Category"
+                        class="flex-1 px-4 py-2 bg-panel border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+                </div>
+                <button id="save-q-btn"
+                    class="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-500 w-full">Save Question
+                    to Exam Bank</button>
+            </div>
+        </div>
+
+        <!-- NEW: Live Anti-Cheat Monitor -->
+        <div class="mb-8 border border-gray-700 p-6 rounded-lg bg-navy/50 shadow-md">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-red-500">🔴 Live Anti-Cheat Monitor</h3>
+                <span class="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold animate-pulse">Monitoring Active</span>
+            </div>
+
+            <!-- The violation cards will be injected here automatically by the new script -->
+            <div id="violation-logs" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[600px] overflow-y-auto pr-2">
+                <p class="text-gray-400 italic col-span-full">Waiting for exam data...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCm-SD4-nbJcAI3WdmwzLdrenJBg7IW7E4",
+            authDomain: "vidhiora-exam-c50d6.firebaseapp.com",
+            projectId: "vidhiora-exam-c50d6",
+            storageBucket: "vidhiora-exam-c50d6.firebasestorage.app",
+            messagingSenderId: "248789284963",
+            appId: "1:248789284963:web:74ac4c1160d36c996ae056",
+            measurementId: "G-EMLH73DGXZ"
+        };
+
+        const AUTHORIZED_ADMIN = "dhikrit.official@gmail.com";
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const loginScreen = document.getElementById('admin-login-screen');
+        const dashboard = document.getElementById('admin-dashboard-content');
+        const msgEl = document.getElementById('login-msg');
+
+        // --- AUTHENTICATION STATE & ACCESS CONTROL ---
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                if (user.email === AUTHORIZED_ADMIN) {
+                    loginScreen.classList.add('hidden');
+                    dashboard.classList.remove('hidden');
+                    document.getElementById('verified-email').innerText = user.email;
+                    
+                    // Start the real-time live cheat monitoring
+                    startLiveCheatMonitoring();
+                } else {
+                    alert("Access Denied: You are not authorized to view the Vidhiora Admin Portal.");
+                    auth.signOut().then(() => {
+                        window.location.href = "index.html";
+                    });
+                }
+            } else {
+                loginScreen.classList.remove('hidden');
+                dashboard.classList.add('hidden');
+            }
+        });
+
+        // --- SEND SECURE LOGIN LINK ---
+        document.getElementById('send-link-btn').addEventListener('click', () => {
+            const email = document.getElementById('admin-email-input').value.trim();
+            if (!email) return alert("Please enter your email address.");
+            if (email !== AUTHORIZED_ADMIN) return alert("Unauthorized Email address.");
+
+            const actionCodeSettings = {
+                url: window.location.href,
+                handleCodeInApp: true
+            };
+
+            msgEl.innerText = "Sending link...";
+            msgEl.classList.remove('hidden', 'text-red-400');
+            msgEl.classList.add('text-green-400');
+
+            auth.sendSignInLinkToEmail(email, actionCodeSettings)
+                .then(() => {
+                    window.localStorage.setItem('emailForSignIn', email);
+                    msgEl.innerText = "Secure login link sent! Check your Gmail inbox/spam.";
+                })
+                .catch(error => {
+                    msgEl.innerText = error.message;
+                    msgEl.classList.replace('text-green-400', 'text-red-400');
+                });
+        });
+
+        // --- COMPLETE LOGIN AFTER CLICKING EMAIL LINK ---
+        if (auth.isSignInWithEmailLink(window.location.href)) {
+            let email = window.localStorage.getItem('emailForSignIn');
+            if (!email) {
+                email = window.prompt('Please confirm your email address for verification:');
+            }
+            auth.signInWithEmailLink(email, window.location.href)
+                .then(() => {
+                    window.localStorage.removeItem('emailForSignIn');
+                    window.history.replaceState(null, "", window.location.pathname);
+                })
+                .catch(error => alert("Authentication failed: " + error.message));
+        }
+
+        // --- LOGOUT ---
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // --- REAL-TIME LIVE CHEAT MONITORING (NEW) ---
+        function startLiveCheatMonitoring() {
+            const container = document.getElementById('violation-logs');
+            if(!container) return;
+            
+            // Listen to the "exam_violations" collection in real-time, sorted by newest first
+            db.collection("exam_violations")
+              .orderBy("timestamp", "desc")
+              .onSnapshot((snapshot) => {
+                  
+                  if (snapshot.empty) {
+                      container.innerHTML = '<p class="text-green-400 font-bold col-span-full">✅ No cheating violations recorded yet. Clean exam session!</p>';
+                      return;
+                  }
+                  
+                  // Clear container before injecting fresh data
+                  container.innerHTML = '';
+                  
+                  snapshot.forEach((doc) => {
+                      const data = doc.data();
+                      
+                      // Format the timestamp cleanly
+                      const time = data.timestamp 
+                          ? data.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}) 
+                          : 'Just now';
+                      
+                      // Create the card for each cheat log
+                      const card = document.createElement('div');
+                      card.className = "bg-panel border border-red-600/50 rounded-lg p-4 shadow-lg flex flex-col hover:border-red-500 transition-colors";
+                      
+                      card.innerHTML = `
+                          <!-- Cheat Snapshot Image -->
+                          <div class="relative mb-4">
+                              <a href="${data.snapshotUrl}" target="_blank">
+                                  <img src="${data.snapshotUrl}" alt="Proctor Snapshot" class="w-full h-48 object-cover rounded border border-gray-600 cursor-pointer hover:opacity-90">
+                              </a>
+                              <span class="absolute top-2 right-2 bg-black bg-opacity-75 text-red-500 text-xs font-bold px-2 py-1 rounded">
+                                  ${time}
+                              </span>
+                          </div>
+                          
+                          <!-- Cheat Details -->
+                          <h3 class="text-red-400 font-bold text-base leading-tight mb-3">${data.violation}</h3>
+                          <div class="mt-auto bg-navy p-3 rounded border border-gray-700 flex justify-between items-center">
+                              <div>
+                                  <p class="text-gray-400 text-xs mb-1 uppercase tracking-wider">Candidate ID</p>
+                                  <p class="font-mono text-white text-sm font-bold truncate max-w-[180px]" title="${data.email}">${data.email}</p>
+                              </div>
+                              <span class="bg-red-500/20 text-red-400 p-1.5 rounded-full">
+                                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                              </span>
+                          </div>
+                      `;
+                      
+                      container.appendChild(card);
+                  });
+              }, (error) => {
+                  console.error("Error fetching violation logs: ", error);
+                  container.innerHTML = `<p class="text-red-500 col-span-full">Error loading live monitor: ${error.message}</p>`;
+              });
+        }
+
+        // --- AI QUESTION GENERATOR STUB ---
+        document.getElementById('generate-ai-btn').addEventListener('click', () => {
+            const topic = document.getElementById('ai-topic').value.trim();
+            if (!topic) return alert("Please enter a topic first.");
+
+            const btn = document.getElementById('generate-ai-btn');
+            btn.innerText = "Generating...";
+
+            setTimeout(() => {
+                document.getElementById('admin-q-text').value = `[AI Generated] Under the constitutional doctrine of ${topic}, which of the following applies?`;
+                document.getElementById('admin-opt-0').value = "The strict proportionality test and balancing of fundamental freedoms";
+                document.getElementById('admin-opt-1').value = "Absolute legislative immunity without judicial scrutiny";
+                document.getElementById('admin-opt-2').value = "Exclusively executive determination during emergencies";
+                document.getElementById('admin-opt-3').value = "Automatic suspension of Article 32 remedies";
+                document.getElementById('admin-correct').value = "0";
+                document.getElementById('admin-category').value = topic;
+                btn.innerText = "Generate Question via AI";
+            }, 1000);
+        });
+
+        // --- SAVE MANUAL QUESTION TO LOCAL STORAGE ---
+        document.getElementById('save-q-btn').addEventListener('click', () => {
+            const newQ = {
+                q: document.getElementById('admin-q-text').value,
+                opts: [
+                    document.getElementById('admin-opt-0').value,
+                    document.getElementById('admin-opt-1').value,
+                    document.getElementById('admin-opt-2').value,
+                    document.getElementById('admin-opt-3').value
+                ],
+                ans: parseInt(document.getElementById('admin-correct').value),
+                cat: document.getElementById('admin-category').value || "General"
+            };
+            if (!newQ.q || !newQ.opts[0]) return alert("Please fill the required fields");
+
+            let currentQs = JSON.parse(localStorage.getItem('vidhiora_qs') || '[]');
+            currentQs.push(newQ);
+            localStorage.setItem('vidhiora_qs', JSON.stringify(currentQs));
+            alert("Question saved to local bank!");
+
+            document.querySelectorAll('input[type="text"], textarea').forEach(el => el.value = '');
+        });
+
+        // --- BULK IMPORT LOGIC ---
+        document.getElementById('import-bulk-btn').addEventListener('click', () => {
+            const rawText = document.getElementById('bulk-json-input').value.trim();
+            if (!rawText) return alert("Please paste your JSON questions data first.");
+
+            try {
+                const newQuestions = JSON.parse(rawText);
+                if (!Array.isArray(newQuestions)) {
+                    return alert("Invalid format. The root structure must be an array [ ... ] of question objects.");
+                }
+
+                let currentQs = JSON.parse(localStorage.getItem('vidhiora_qs') || '[]');
+                currentQs = [...currentQs, ...newQuestions];
+                localStorage.setItem('vidhiora_qs', JSON.stringify(currentQs));
+
+                alert(`Successfully imported and arranged ${newQuestions.length} questions!`);
+                document.getElementById('bulk-json-input').value = '';
+            } catch (err) {
+                alert("JSON Parsing Error: Please check your syntax. Error: " + err.message);
+            }
+        });
+    </script>
+</body>
+
+</html>
