@@ -453,3 +453,15 @@ function captureAndUploadViolationSnapshot(violationType) {
         }
     }, 'image/jpeg', 0.85); 
 }
+document.getElementById('request-cam-btn')?.addEventListener('click', async () => {
+    alert("Button clicked! Attempting to access camera..."); // Test alert
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.getElementById('proctor-video');
+        video.srcObject = stream;
+        video.classList.remove('hidden');
+    } catch (err) {
+        alert("Camera error: " + err.message); // Will show exact error if blocked
+    }
+});
