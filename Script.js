@@ -1,4 +1,4 @@
-// --- 1. LOAD QUESTIONS FROM FIRESTORE CLOUD (WITH FALLBACKS) ---
+// --- 1. LOAD QUESTIONS FROM FIRESTORE CLOUD (SYNCHRONIZED) ---
 let questions = [];
 let totalQuestions = 0;
 let userAnswers = [];
@@ -23,10 +23,11 @@ async function initializeExamQuestions() {
         if (db) {
             const snapshot = await db.collection("question_bank").get();
             if (!snapshot.empty) {
+                questions = []; // Reset array
                 snapshot.forEach(doc => {
                     questions.push(doc.data());
                 });
-                console.log(`Loaded ${questions.length} questions from Firestore cloud.`);
+                console.log(`Successfully loaded ${questions.length} questions from Firestore cloud.`);
             }
         }
     } catch (e) {
@@ -109,8 +110,8 @@ document.getElementById('proceed-to-login')?.addEventListener('click', () => {
     document.getElementById('login-screen')?.classList.remove('hidden');
 });
 
-// --- 4. START EXAM (Safe with Element Checks) ---
-document.getElementById('start-exam-btn')?.addEventListener('click', () => {
+// --- 4. START EXAM (Waits for Firestore questions to resolve) ---
+document.getElementById('start-exam-btn')?.addEventListener('click', async () => {
     const nameInput = document.getElementById('candidate-name');
     const uniInput = document.getElementById('candidate-university');
     
@@ -147,6 +148,11 @@ document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     
     if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(e => console.log("Fullscreen request failed:", e));
+    }
+    
+    // Ensure questions are fully loaded before rendering grid and first question
+    if (questions.length === 0 || totalQuestions === 0) {
+        await initializeExamQuestions();
     }
     
     examActive = true;
