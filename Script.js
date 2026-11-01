@@ -71,23 +71,34 @@ document.getElementById('proceed-to-login')?.addEventListener('click', () => {
     document.getElementById('login-screen')?.classList.remove('hidden');
 });
 
-// --- 5. START EXAM ---
+// --- 5. START EXAM (Dynamically query screens to prevent null pointer issues) ---
 document.getElementById('start-exam-btn')?.addEventListener('click', () => {
-    const name = document.getElementById('candidate-name').value.trim();
-    const university = document.getElementById('candidate-university').value.trim();
+    const nameInput = document.getElementById('candidate-name');
+    const universityInput = document.getElementById('candidate-university');
+    
+    if (!nameInput || !universityInput) {
+        alert("Input elements not found in DOM.");
+        return;
+    }
+
+    const name = nameInput.value.trim();
+    const university = universityInput.value.trim();
     
     if (!name || !university) {
         return alert("Please fill in both your Full Name and University Name.");
     }
     
-    // Store university identifier globally for tracking and Firestore database logs
     window.candidateEmail = university; 
     
     const displayRoll = document.getElementById('display-roll');
     if (displayRoll) displayRoll.innerText = university;
     
-    screens.login.classList.add('hidden');
-    screens.exam.classList.remove('hidden');
+    // Dynamically grab screens on click to ensure they exist
+    const loginScreen = document.getElementById('login-screen');
+    const examScreen = document.getElementById('exam-screen');
+    
+    if (loginScreen) loginScreen.classList.add('hidden');
+    if (examScreen) examScreen.classList.remove('hidden');
     
     if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(e => console.log("Fullscreen request failed:", e));
