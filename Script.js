@@ -866,7 +866,7 @@ function startTimer() {
     }, 1000); 
 } 
 
-// --- 6. EXAM SUBMISSION & LEADERBOARD SYNC ---
+// --- 6. EXAM SUBMISSION & LEADERBOARD SYNC (ROBUST & PATCHED) ---
 function submitExam() {
     examActive = false;
     if (phoneDetectionInterval) clearInterval(phoneDetectionInterval);
@@ -883,6 +883,7 @@ function submitExam() {
         video.srcObject.getTracks().forEach(track => track.stop());
     }
 
+    // Calculate score safely
     let score = 0;
     userAnswers.forEach((ans, idx) => {
         if (ans !== null && questions[idx] && ans === questions[idx].ans) score++;
@@ -891,23 +892,40 @@ function submitExam() {
     const finalScoreEl = document.getElementById('final-score');
     if (finalScoreEl) finalScoreEl.innerText = score;
 
-    if (db && window.candidateEmail) {
+    // Safely pull candidate details
+    const nameInput = document.getElementById('candidate-name');
+    const candidateName = nameInput ? nameInput.value.trim() : "Anonymous Candidate";
+    const candidateIdentifier = window.candidateEmail || "unknown_university";
+
+    console.log("Submitting exam for:", candidateName, "Score:", score);
+
+    // Save to Firestore with error logging
+    if (db) {
         db.collection("exam_results").add({
-            name: document.getElementById('candidate-name')?.value || "Anonymous",
-            email: window.candidateEmail,
+            name: candidateName,
+            email: candidateIdentifier,
             score: score,
             total: totalQuestions,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).catch(err => console.error("Error saving exam result:", err));
+        })
+        .then(() => {
+            console.log("Exam result successfully written to Firestore!");
+        })
+        .catch(err => {
+            console.error("Error saving exam result to Firestore:", err);
+            alert("Warning: Could not sync score to cloud database. Check Firebase rules.");
+        });
+    } else {
+        console.error("Firestore database instance (db) is null. Cannot save results.");
     }
 }
 
+// Bulletproof submit button click listener
 document.getElementById('submit-exam-btn')?.addEventListener('click', () => {
     if (confirm("Are you sure you want to finalize and submit your test?")) {
         submitExam();
     }
 });
-
 // --- 7. DUAL-AI PROCTORING LOGIC (FACE & DEVICE DETECTION) ---
 let absenceTimer = 0;
 let objectDetector = null;
