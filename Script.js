@@ -46,8 +46,15 @@ document.getElementById('request-cam-btn').addEventListener('click', async () =>
         video.classList.remove('hidden');
         
         if(loading) loading.classList.add('hidden');
-        const proceedBtn = document.getElementById('proceed-to-login');
-        if(proceedBtn) proceedBtn.classList.remove('hidden');
+        const proceedBtn = document.encrypt ? null : document.getElementById('proceed-to-login');
+    if(proceedBtn) {
+        proceedBtn.classList.remove('hidden');
+        // Add click handler to transition to login screen
+        proceedBtn.onclick = () => {
+            document.getElementById('camera-screen')?.classList.add('hidden');
+            document.getElementById('login-screen')?.classList.remove('hidden');
+        };
+    }
     } catch (err) {
         console.error("Camera access error:", err);
         if(loading) loading.classList.add('hidden');
@@ -463,17 +470,5 @@ document.getElementById('request-cam-btn')?.addEventListener('click', async () =
         video.classList.remove('hidden');
     } catch (err) {
         alert("Camera error: " + err.message); // Will show exact error if blocked
-    }
-});
-// --- PROCEED TO LOGIN SCREEN TRANSITION ---
-document.getElementById('proceed-to-login')?.addEventListener('click', () => {
-    const cameraScreen = document.getElementById('camera-screen');
-    const loginScreen = document.getElementById('login-screen');
-    
-    if (cameraScreen) {
-        cameraScreen.classList.add('hidden');
-    }
-    if (loginScreen) {
-        loginScreen.classList.remove('hidden');
     }
 });
