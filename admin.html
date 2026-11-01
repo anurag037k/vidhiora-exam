@@ -116,7 +116,32 @@
         </div>
 
     </div>
+<!-- LEADERBOARD SECTION -->
+        <div class="mb-8 border border-gray-700 p-6 rounded-lg bg-navy/50 shadow-md">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gold">🏆 Candidate Leaderboard</h3>
+                <span class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold">Real-time Ranking</span>
+            </div>
 
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-gray-300">
+                    <thead>
+                        <tr class="border-b border-gray-700 text-gold">
+                            <th class="py-2 px-4">Rank</th>
+                            <th class="py-2 px-4">Candidate Name</th>
+                            <th class="py-2 px-4">Email / Roll ID</th>
+                            <th class="py-2 px-4">Score</th>
+                            <th class="py-2 px-4">Submitted At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-table-body">
+                        <tr>
+                            <td colspan="5" class="py-4 text-center text-gray-500">Loading leaderboard rankings...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCm-SD4-nbJcAI3WdmwzLdrenJBg7IW7E4",
@@ -331,6 +356,51 @@
                 alert("JSON Parsing Error: Please check your syntax. Error: " + err.message);
             }
         });
+        // --- REAL-TIME LEADERBOARD LISTENER ---
+        function startLeaderboardListener() {
+            const tbody = document.getElementById('leaderboard-table-body');
+            if (!tbody) return;
+
+            // Query results sorted by highest score descending
+            db.collection("exam_results")
+              .orderBy("score", "desc")
+              .limit(50)
+              .onSnapshot((snapshot) => {
+                  if (snapshot.empty) {
+                      tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-gray-400">No submissions recorded yet.</td></tr>`;
+                      return;
+                  }
+
+                  tbody.innerHTML = "";
+                  let rank = 1;
+
+                  snapshot.forEach((doc) => {
+                      const data = doc.data();
+                      const timeStr = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "Just now";
+                      
+                      // Highlight top 3 ranks with gold, silver, bronze badges
+                      let rankBadge = `<span class="font-bold text-gray-400">#${rank}</span>`;
+                      if (rank === 1) rankBadge = `<span class="bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded font-bold">🥇 1st</span>`;
+                      else if (rank === 2) rankBadge = `<span class="bg-gray-400/20 text-gray-300 px-2 py-0.5 rounded font-bold">🥈 2nd</span>`;
+                      else if (rank === 3) rankBadge = `<span class="bg-amber-600/20 text-amber-500 px-2 py-0.5 rounded font-bold">🥉 3rd</span>`;
+
+                      const row = document.createElement('tr');
+                      row.className = "border-b border-gray-800 hover:bg-gray-800/50 transition-colors";
+                      row.innerHTML = `
+                          <td class="py-3 px-4">${rankBadge}</td>
+                          <td class="py-3 px-4 font-semibold text-white">${data.name || 'N/A'}</td>
+                          <td class="py-3 px-4 font-mono text-gray-300">${data.email || 'N/A'}</td>
+                          <td class="py-3 px-4 text-gold font-bold text-sm">${data.score} / ${data.total || 100}</td>
+                          <td class="py-3 px-4 text-gray-400">${timeStr}</td>
+                      `;
+                      tbody.appendChild(row);
+                      rank++;
+                  });
+              }, (error) => {
+                  console.error("Error loading leaderboard:", error);
+                  tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-red-500">Error loading leaderboard data. Ensure Firestore index exists.</td></tr>`;
+              });
+        }
     </script>
 </body>
 

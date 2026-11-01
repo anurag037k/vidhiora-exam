@@ -209,13 +209,9 @@ function startTimer() {
     }, 1000); 
 } 
 
-// --- 7. EXAM SUBMISSION ---
-let phoneDetectionInterval; 
-
+// --- EXAM SUBMISSION & LEADERBOARD SYNC ---
 function submitExam() {
     examActive = false;
-    clearInterval(phoneDetectionInterval); // Stop scanning for phones
-    
     screens.exam.classList.add('hidden');
     screens.warning.classList.add('hidden');
     screens.result.classList.remove('hidden');
@@ -226,11 +222,24 @@ function submitExam() {
     if(video && video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
     }
-}
 
-document.getElementById('submit-exam-btn')?.addEventListener('click', () => {
-    if(confirm("Are you sure you want to submit the exam?")) submitExam();
-});
+    // Calculate total score
+    let score = 0;
+    userAnswers.forEach((ans, idx) => {
+        if(ans === questions[idx].ans) score++;
+    });
+
+    // Save Result to Firestore for Admin Leaderboard
+    if (db && window.candidateEmail) {
+        db.collection("exam_results").add({
+            name: document.getElementById('candidate-name')?.value || "Anonymous",
+            email: window.candidateEmail,
+            score: score,
+            total: totalQuestions,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(err => console.error("Error saving exam result:", err));
+    }
+}
 
 // --- 8. DUAL-AI PROCTORING LOGIC (FACE & DEVICE DETECTION) ---
 let db;
