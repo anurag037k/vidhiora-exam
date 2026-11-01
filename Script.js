@@ -29,31 +29,31 @@ const screens = {
     warning: document.getElementById('warning-modal')
 };
 
-// --- 4. CAMERA SETUP ---
-async function requestCamera() {
+/// --- 4. CAMERA SETUP ---
+document.getElementById('request-cam-btn').addEventListener('click', async () => {
+    const loading = document.getElementById('camera-loading');
+    const errorMsg = document.getElementById('camera-error');
+    const camBtn = document.getElementById('request-cam-btn');
+    
+    if(loading) loading.classList.remove('hidden');
+    if(errorMsg) errorMsg.classList.add('hidden');
+    if(camBtn) camBtn.classList.add('hidden');
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         const video = document.getElementById('proctor-video');
         video.srcObject = stream;
         video.classList.remove('hidden');
         
-        const loading = document.getElementById('camera-loading');
-        const proceedBtn = document.getElementById('proceed-to-login');
         if(loading) loading.classList.add('hidden');
+        const proceedBtn = document.getElementById('proceed-to-login');
         if(proceedBtn) proceedBtn.classList.remove('hidden');
     } catch (err) {
-        console.error("Camera access denied or missing:", err);
-        const loading = document.getElementById('camera-loading');
-        const errorMsg = document.getElementById('camera-error');
+        console.error("Camera access error:", err);
         if(loading) loading.classList.add('hidden');
         if(errorMsg) errorMsg.classList.remove('hidden');
+        if(camBtn) camBtn.classList.remove('hidden');
     }
-}
-window.addEventListener('load', requestCamera);
-
-document.getElementById('proceed-to-login')?.addEventListener('click', () => {
-    screens.camera.classList.add('hidden');
-    screens.login.classList.remove('hidden');
 });
 
 // --- 5. START EXAM ---
