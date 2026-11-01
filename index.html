@@ -62,9 +62,23 @@
                 <input type="text" id="candidate-university" placeholder="Enter your university name" class="w-full px-4 py-2.5 bg-navy border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gold">
             </div>
 
-            <button id="start-exam-btn" class="w-full bg-gold text-navy py-3 rounded-lg font-bold hover:bg-yellow-400 transition-all text-sm">
-                Start Examination
-            </button>
+            <button id="start-exam-btn" onclick="
+    const name = document.getElementById('candidate-name')?.value;
+    const uni = document.getElementById('candidate-university')?.value;
+    if(!name || !uni) { alert('Please fill in both fields'); return; }
+    window.candidateEmail = uni;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('exam-screen').classList.remove('hidden');
+    document.getElementById('exam-screen').style.display = 'flex';
+    if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e=>{});
+    examActive = true;
+    if(typeof initGrid === 'function') initGrid();
+    if(typeof loadQuestion === 'function') loadQuestion(0);
+    if(typeof startTimer === 'function') startTimer();
+    if(typeof initProctoring === 'function') setTimeout(initProctoring, 1000);
+" class="w-full bg-gold text-navy py-3 rounded-lg font-bold hover:bg-yellow-400 transition-all text-sm cursor-pointer">
+    Start Examination
+</button>
         </div>
 
         <div class="mt-6 text-center text-sm text-gray-500">
