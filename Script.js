@@ -80,10 +80,9 @@ document.getElementById('start-exam-btn')?.addEventListener('click', () => {
         return alert("Please fill in both your Full Name and University Name.");
     }
     
-    // Store university identifier globally for snapshot logging & database records
-    window.candidateIdentifier = university; 
+    // Store university identifier globally for tracking and Firestore database logs
+    window.candidateEmail = university; 
     
-    // Optional: display university name in the header if you have a display element
     const displayRoll = document.getElementById('display-roll');
     if (displayRoll) displayRoll.innerText = university;
     
