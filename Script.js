@@ -71,21 +71,14 @@ document.getElementById('proceed-to-login')?.addEventListener('click', () => {
     document.getElementById('login-screen')?.classList.remove('hidden');
 });
 
-// --- 5. START EXAM (Dynamically query screens to prevent null pointer issues) ---
+// --- 5. START EXAM (Foolproof Screen Transition) ---
 document.getElementById('start-exam-btn')?.addEventListener('click', () => {
-    const nameInput = document.getElementById('candidate-name');
-    const universityInput = document.getElementById('candidate-university');
-    
-    if (!nameInput || !universityInput) {
-        alert("Input elements not found in DOM.");
-        return;
-    }
-
-    const name = nameInput.value.trim();
-    const university = universityInput.value.trim();
+    const name = document.getElementById('candidate-name')?.value.trim();
+    const university = document.getElementById('candidate-university')?.value.trim();
     
     if (!name || !university) {
-        return alert("Please fill in both your Full Name and University Name.");
+        alert("Please fill in both your Full Name and University Name.");
+        return;
     }
     
     window.candidateEmail = university; 
@@ -93,12 +86,17 @@ document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     const displayRoll = document.getElementById('display-roll');
     if (displayRoll) displayRoll.innerText = university;
     
-    // Dynamically grab screens on click to ensure they exist
+    // Explicitly manipulate display styles to override any stubborn CSS conflicts
     const loginScreen = document.getElementById('login-screen');
     const examScreen = document.getElementById('exam-screen');
     
-    if (loginScreen) loginScreen.classList.add('hidden');
-    if (examScreen) examScreen.classList.remove('hidden');
+    if (loginScreen) {
+        loginScreen.style.display = 'none';
+    }
+    if (examScreen) {
+        examScreen.classList.remove('hidden');
+        examScreen.style.display = 'flex'; // Force flex display to render correctly
+    }
     
     if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(e => console.log("Fullscreen request failed:", e));
