@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Vidhiora Constitutional Law Grand Test</title>
 
-    <!-- 1. MediaPipe AI Proctoring Dependencies -->
+    <!-- Proctoring Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-    
-    <!-- 2. TensorFlow Object Detection (For Mobile Phones) -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd" crossorigin="anonymous"></script>
 
@@ -20,8 +18,6 @@
             theme: { extend: { colors: { navy: '#0b1120', panel: '#1e293b', gold: '#fbbf24', danger: '#ef4444' } } }
         }
     </script>
-    
-    <!-- Custom Styles -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-navy text-gray-200 h-screen w-screen overflow-hidden font-sans select-none" oncontextmenu="return false;">
@@ -31,65 +27,37 @@
         <div class="bg-panel p-6 sm:p-8 rounded-lg shadow-lg text-center max-w-md w-full">
             <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Camera Access Required</h2>
             <p class="text-gray-400 text-sm mb-6">This is a proctored examination. You must grant camera permissions to proceed.</p>
-            
-            <button id="request-cam-btn" class="bg-gold text-navy px-6 py-3 rounded font-bold hover:bg-yellow-500 w-full mb-4 text-sm">
-                Grant Camera Permission
-            </button>
-
+            <button id="request-cam-btn" class="bg-gold text-navy px-6 py-3 rounded font-bold hover:bg-yellow-500 w-full mb-4 text-sm">Grant Camera Permission</button>
             <div id="camera-loading" class="text-gold font-semibold text-sm hidden">Requesting camera access...</div>
-            <div id="camera-error" class="hidden text-red-400 font-semibold text-sm mt-2">Permission Denied. Please enable camera access in your browser settings.</div>
-            
+            <div id="camera-error" class="hidden text-red-400 font-semibold text-sm mt-2">Permission Denied. Please enable camera access.</div>
             <video id="proctor-video" autoplay muted class="hidden mt-4 rounded border border-gray-600 w-full h-40 sm:h-48 object-cover"></video>
-            
-            <!-- Bulletproof Inline Proceed Button -->
-            <button id="proceed-to-login" onclick="document.getElementById('camera-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden');" class="hidden mt-6 bg-green-600 text-white px-6 py-2.5 rounded font-bold w-full hover:bg-green-500 text-sm">Proceed to Login →</button>
+            <button id="proceed-to-login" class="hidden mt-6 bg-green-600 text-white px-6 py-2.5 rounded font-bold w-full hover:bg-green-500 text-sm">Proceed to Login →</button>
         </div>
     </div>
 
-    <!-- Registration / Login Form -->
+    <!-- Login Form -->
     <div id="login-screen" class="hidden fixed inset-0 z-40 flex flex-col items-center justify-center bg-navy px-4">
         <div class="bg-panel border border-gray-700/60 p-6 sm:p-8 rounded-xl shadow-2xl max-w-md w-full backdrop-blur-sm">
             <h2 class="text-xl sm:text-2xl font-bold text-white mb-6 text-center">Vidhiora Grand Test</h2>
-            
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Full Name</label>
-                    <input type="text" id="candidate-name" placeholder="Enter your full name" class="w-full px-4 py-2.5 bg-navy border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gold text-sm">
+                    <input type="text" id="candidate-name" placeholder="Enter your full name" class="w-full px-4 py-2.5 bg-navy border border-gray-600 rounded-lg text-white focus:border-gold text-sm">
                 </div>
-
                 <div>
                     <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">University Name</label>
-                    <input type="text" id="candidate-university" placeholder="Enter your university name" class="w-full px-4 py-2.5 bg-navy border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gold text-sm">
+                    <input type="text" id="candidate-university" placeholder="Enter your university name" class="w-full px-4 py-2.5 bg-navy border border-gray-600 rounded-lg text-white focus:border-gold text-sm">
                 </div>
-
-                <button id="start-exam-btn" onclick="
-                    const name = document.getElementById('candidate-name')?.value;
-                    const uni = document.getElementById('candidate-university')?.value;
-                    if(!name || !uni) { alert('Please fill in both fields'); return; }
-                    window.candidateEmail = uni;
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('exam-screen').classList.remove('hidden');
-                    document.getElementById('exam-screen').style.display = 'flex';
-                    if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e=>{});
-                    examActive = true;
-                    if(typeof initGrid === 'function') initGrid();
-                    if(typeof loadQuestion === 'function') loadQuestion(0);
-                    if(typeof startTimer === 'function') startTimer();
-                    if(typeof initProctoring === 'function') setTimeout(initProctoring, 1000);
-                " class="w-full bg-gold text-navy py-3 rounded-lg font-bold hover:bg-yellow-400 transition-all text-sm cursor-pointer shadow-lg">
-                    Start Examination
-                </button>
+                <button id="start-exam-btn" class="w-full bg-gold text-navy py-3 rounded-lg font-bold hover:bg-yellow-400 transition-all text-sm shadow-lg">Start Examination</button>
             </div>
-
             <div class="mt-6 text-center text-xs sm:text-sm text-gray-500">
                 <a href="admin.html" target="_blank" class="hover:text-gold transition-colors">Admin Panel Access →</a>
             </div>
         </div>
     </div>
 
-    <!-- Main Exam Interface -->
+    <!-- Exam Interface -->
     <div id="exam-screen" class="hidden flex flex-col h-screen w-screen overflow-hidden">
-        <!-- Header -->
         <header class="bg-panel border-b border-gray-700 h-auto md:h-16 flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-2.5 shrink-0 gap-2">
             <div class="flex items-center justify-between md:justify-start gap-4 w-full md:w-auto">
                 <div class="flex items-center gap-2">
@@ -109,20 +77,18 @@
             </div>
         </header>
 
-        <!-- Main Content -->
         <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-            <!-- Left Workspace (Questions) -->
             <div class="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto custom-scrollbar">
                 <div class="flex flex-wrap justify-between items-center mb-4 md:mb-6 gap-2">
-                    <div class="text-gold text-xs md:text-sm font-semibold border border-gold/30 px-3 py-1 rounded-full bg-gold/5" id="question-category">Fundamental Rights</div>
-                    <div class="text-gray-400 text-xs md:text-sm">Question <span id="q-current-num" class="font-bold text-white">1</span> of 100</div>
+                    <div class="text-gold text-xs md:text-sm font-semibold border border-gold/30 px-3 py-1 rounded-full bg-gold/5" id="question-category">Loading...</div>
+                    <div class="text-gray-400 text-xs md:text-sm">Question <span id="q-current-num" class="font-bold text-white">1</span></div>
                     <div class="flex gap-2">
                         <button id="mark-review-btn" class="border border-gray-500 px-2.5 py-1 rounded text-xs md:text-sm hover:bg-gray-700 transition-colors">📌 Mark for Review</button>
                         <button id="clear-option-btn" class="border border-gray-500 px-2.5 py-1 rounded text-xs md:text-sm hover:bg-gray-700 transition-colors">Clear Option</button>
                     </div>
                 </div>
                 
-                <div id="question-text" class="text-sm md:text-lg text-white mb-6 md:mb-8 leading-relaxed font-medium"></div>
+                <div id="question-text" class="text-sm md:text-lg text-white mb-6 md:mb-8 leading-relaxed font-medium">Fetching question...</div>
                 <div id="options-container" class="flex flex-col gap-3 md:gap-4 mb-auto"></div>
 
                 <div class="mt-6 md:mt-8 pt-4 border-t border-gray-700 flex justify-between gap-3">
@@ -131,15 +97,14 @@
                 </div>
             </div>
 
-            <!-- Right Palette -->
             <aside class="w-full md:w-80 bg-panel border-t md:border-t-0 md:border-l border-gray-700 flex flex-col shrink-0 max-h-[35vh] md:max-h-full">
                 <div class="p-3 md:p-4 border-b border-gray-700">
                     <h3 class="font-bold text-white mb-2 md:mb-3 text-xs md:text-sm tracking-wide">QUESTION PALETTE</h3>
                     <div class="grid grid-cols-2 gap-1.5 md:gap-2 text-[11px] md:text-xs text-gray-300">
                         <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-green-500 shrink-0"></div> Answered (<span id="count-answered">0</span>)</div>
-                        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-red-500 shrink-0"></div> Unanswered (<span id="count-unanswered">100</span>)</div>
+                        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-red-500 shrink-0"></div> Unanswered (<span id="count-unanswered">0</span>)</div>
                         <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-yellow-500 shrink-0"></div> Marked (<span id="count-marked">0</span>)</div>
-                        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-gray-600 shrink-0"></div> Not Visited (<span id="count-not-visited">100</span>)</div>
+                        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-gray-600 shrink-0"></div> Not Visited (<span id="count-not-visited">0</span>)</div>
                     </div>
                 </div>
                 <div class="p-3 md:p-4 flex-1 overflow-y-auto custom-scrollbar">
@@ -149,7 +114,7 @@
         </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Modals & Screens -->
     <div id="warning-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
         <div class="bg-danger text-white p-6 md:p-8 rounded-xl shadow-lg text-center max-w-md w-full">
             <h2 class="text-2xl md:text-3xl font-bold mb-3 md:mb-4">⚠️ WARNING RECORDED</h2>
@@ -161,8 +126,8 @@
 
     <div id="result-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-navy text-white px-4 text-center">
         <h1 class="text-3xl md:text-4xl font-bold text-gold mb-3 md:mb-4">Exam Submitted Successfully</h1>
-        <p class="text-base md:text-lg text-gray-300 mb-6 md:mb-8">Your responses have been securely logged.</p>
-        <p class="text-sm font-mono text-gold mb-4 bg-panel px-4 py-2 rounded border border-gray-700">Final Score: <span id="final-score">0</span> / 100</p>
+        <p class="text-base md:text-lg text-gray-300 mb-6 md:mb-8">Your responses have been securely logged to the Admin Dashboard.</p>
+        <p class="text-sm font-mono text-gold mb-4 bg-panel px-4 py-2 rounded border border-gray-700">Final Score: <span id="final-score">0</span> / <span id="total-score-display">0</span></p>
         <p class="text-xs md:text-sm text-gray-500">You may now close this window.</p>
     </div>
 
@@ -172,15 +137,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
-    <!-- App Logic Script -->
-    <script src="script.js"></script>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-
-    <!-- Firebase Initialization (Fixes "Firebase Firestore is not initialized") -->
+    <!-- Firebase Initialization -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCm-SD4-nbJcAI3WdmwzLdrenJBg7IW7E4",
@@ -191,13 +148,12 @@
             appId: "1:248789284963:web:74ac4c1160d36c996ae056",
             measurementId: "G-EMLH73DGXZ"
         };
-        
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
     </script>
 
-    <!-- App Logic Script -->
+    <!-- Core App Logic -->
     <script src="script.js"></script>
 </body>
 </html>

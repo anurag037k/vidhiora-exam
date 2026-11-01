@@ -618,6 +618,7 @@ let questions = [
         cat: "Fundamental Rights"
     }
 ];
+// Automatically pad the array to 100 questions
 while (questions.length < 100) {
     questions.push({
         q: `Constitutional Law Grand Test Question #${questions.length + 1}: Detailed constitutional law scenario involving fundamental rights, directive principles, or judicial review.`,
@@ -632,6 +633,7 @@ while (questions.length < 100) {
     });
 }
 
+// --- 2. EXAM STATE & FIREBASE INIT ---
 let totalQuestions = questions.length;
 let userAnswers = new Array(totalQuestions).fill(null);
 let userStatus = new Array(totalQuestions).fill('not-visited');
@@ -643,17 +645,23 @@ let timeRemaining = 7199; // 120 minutes
 let examActive = false;
 let phoneDetectionInterval = null;
 
-// Initialize Firebase Database safely
 let db = null;
 try {
     if (typeof firebase !== 'undefined') {
         db = firebase.firestore();
+        console.log("Firebase Firestore initialized for scores and anti-cheat.");
     }
 } catch (e) {
     console.error("Firebase Firestore initialization warning:", e);
 }
 
-// --- 2. UI SCREENS HELPER ---
+// Display total score on result screen immediately
+document.addEventListener("DOMContentLoaded", () => {
+    const totalScoreDisplay = document.getElementById('total-score-display');
+    if (totalScoreDisplay) totalScoreDisplay.innerText = totalQuestions;
+});
+
+// --- 3. UI SCREENS HELPER & CAMERA SETUP ---
 const getScreens = () => ({
     camera: document.getElementById('camera-screen'),
     login: document.getElementById('login-screen'),
@@ -662,7 +670,6 @@ const getScreens = () => ({
     warning: document.getElementById('warning-modal')
 });
 
-// --- 3. CAMERA SETUP & TRANSITION ---
 document.getElementById('request-cam-btn')?.addEventListener('click', async () => {
     const loading = document.getElementById('camera-loading');
     const errorMsg = document.getElementById('camera-error');
@@ -685,7 +692,7 @@ document.getElementById('request-cam-btn')?.addEventListener('click', async () =
         console.error("Camera access error:", err);
         if (loading) loading.classList.add('hidden');
         if (errorMsg) errorMsg.classList.remove('hidden');
-        if (camBtn) camBtn.classList.add('hidden');
+        if (camBtn) camBtn.classList.remove('hidden');
     }
 });
 
@@ -699,18 +706,12 @@ document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     const nameInput = document.getElementById('candidate-name');
     const uniInput = document.getElementById('candidate-university');
     
-    if (!nameInput || !uniInput) {
-        alert("Input fields missing!");
-        return;
-    }
+    if (!nameInput || !uniInput) return alert("Input fields missing!");
     
     const name = nameInput.value.trim();
     const university = uniInput.value.trim();
     
-    if (!name || !university) {
-        alert("Please fill in both your Full Name and University Name.");
-        return;
-    }
+    if (!name || !university) return alert("Please fill in both your Full Name and University Name.");
     
     window.candidateEmail = university; 
     
@@ -895,7 +896,7 @@ function submitExam() {
     const candidateName = nameInput ? nameInput.value.trim() : "Anonymous Candidate";
     const candidateIdentifier = window.candidateEmail || "unknown_university";
 
-    // Save results directly to Firebase Firestore
+    // Save results directly to Firebase Firestore Leaderboard
     if (db) {
         db.collection("exam_results").add({
             name: candidateName,
@@ -904,8 +905,10 @@ function submitExam() {
             total: totalQuestions,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         })
-        .then(() => console.log("Exam score successfully saved to Firestore!"))
+        .then(() => console.log("Exam score successfully saved to Firestore Leaderboard!"))
         .catch(err => console.error("Error saving score:", err));
+    } else {
+        console.error("Database connection missing. Score not saved.");
     }
 }
 
