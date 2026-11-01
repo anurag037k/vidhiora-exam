@@ -1,17 +1,3 @@
-// --- PROCEED TO LOGIN HANDLER ---
-document.getElementById('proceed-to-login')?.addEventListener('click', () => {
-    // Hide the camera permissions screen
-    const cameraScreen = document.getElementById('camera-screen');
-    if (cameraScreen) {
-        cameraScreen.classList.add('hidden');
-    }
-    
-    // Show the login / registration form screen
-    const loginScreen = document.getElementById('login-screen');
-    if (loginScreen) {
-        loginScreen.classList.remove('hidden');
-    }
-});
 // --- 1. LOAD QUESTIONS FROM BANK ---
 let questions = JSON.parse(localStorage.getItem('vidhiora_qs') || '[]');
 const totalQuestions = 100;
@@ -477,5 +463,17 @@ document.getElementById('request-cam-btn')?.addEventListener('click', async () =
         video.classList.remove('hidden');
     } catch (err) {
         alert("Camera error: " + err.message); // Will show exact error if blocked
+    }
+});
+// --- PROCEED TO LOGIN SCREEN TRANSITION ---
+document.getElementById('proceed-to-login')?.addEventListener('click', () => {
+    const cameraScreen = document.getElementById('camera-screen');
+    const loginScreen = document.getElementById('login-screen');
+    
+    if (cameraScreen) {
+        cameraScreen.classList.add('hidden');
+    }
+    if (loginScreen) {
+        loginScreen.classList.remove('hidden');
     }
 });
