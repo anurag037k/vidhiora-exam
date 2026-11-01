@@ -74,13 +74,18 @@ document.getElementById('proceed-to-login')?.addEventListener('click', () => {
 // --- 5. START EXAM ---
 document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     const name = document.getElementById('candidate-name').value.trim();
-    const roll = document.getElementById('candidate-roll').value.trim();
-    if (!name || !roll) return alert("Please fill in all candidate details.");
+    const university = document.getElementById('candidate-university').value.trim();
     
-    window.candidateEmail = roll; 
+    if (!name || !university) {
+        return alert("Please fill in both your Full Name and University Name.");
+    }
     
+    // Store university identifier globally for snapshot logging & database records
+    window.candidateIdentifier = university; 
+    
+    // Optional: display university name in the header if you have a display element
     const displayRoll = document.getElementById('display-roll');
-    if (displayRoll) displayRoll.innerText = roll;
+    if (displayRoll) displayRoll.innerText = university;
     
     screens.login.classList.add('hidden');
     screens.exam.classList.remove('hidden');
@@ -96,7 +101,6 @@ document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     
     setTimeout(initProctoring, 1000); 
 });
-
 // --- 6. EXAM NAVIGATION & GRID ---
 function initGrid() {
     const grid = document.getElementById('palette-grid');

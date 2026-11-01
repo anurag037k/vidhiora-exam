@@ -45,18 +45,19 @@
     </div>
 
     <!-- Registration / Login Form -->
-    <div id="login-screen" class="hidden fixed inset-0 z-40 flex flex-col items-center justify-center bg-navy">
-        <div class="bg-panel p-8 rounded-lg shadow-lg max-w-md w-full">
-            <h2 class="text-2xl font-bold text-white mb-6 text-center">Vidhiora Grand Test</h2>
-            <input type="text" id="candidate-name" placeholder="Full Name" class="w-full mb-4 px-4 py-2 bg-navy border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
-            <input type="text" id="candidate-roll" placeholder="Roll Number" class="w-full mb-6 px-4 py-2 bg-navy border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
-            <button id="start-exam-btn" class="bg-gold text-navy px-6 py-2 rounded font-bold w-full hover:bg-yellow-500">Start Examination</button>
-            <div class="mt-6 text-center text-sm text-gray-500">
-                <a href="admin.html" target="_blank" class="hover:text-gold">Admin Panel</a>
-            </div>
+<div id="login-screen" class="hidden fixed inset-0 z-40 flex flex-col items-center justify-center bg-navy">
+    <div class="bg-panel p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h2 class="text-2xl font-bold text-white mb-6 text-center">Vidhiora Grand Test</h2>
+        <input type="text" id="candidate-name" placeholder="Full Name" class="w-full mb-4 px-4 py-2 bg-navy border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+        <!-- Changed placeholder and ID reference -->
+        <input type="text" id="candidate-university" placeholder="University Name" class="w-full mb-6 px-4 py-2 bg-navy border border-gray-600 rounded text-white focus:outline-none focus:border-gold">
+        
+        <button id="start-exam-btn" class="bg-gold text-navy px-6 py-2 rounded font-bold w-full hover:bg-yellow-500">Start Examination</button>
+        <div class="mt-6 text-center text-sm text-gray-500">
+            <a href="admin.html" target="_blank" class="hover:text-gold">Admin Panel</a>
         </div>
     </div>
-
+</div>
     <!-- Main Exam Interface -->
     <div id="exam-screen" class="hidden flex flex-col h-screen">
         <!-- Header -->
