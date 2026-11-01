@@ -27,22 +27,23 @@
 <body class="bg-navy text-gray-200 h-screen w-screen overflow-hidden font-sans select-none" oncontextmenu="return false;">
 
     <!-- Camera Request Screen -->
-<div id="camera-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-navy">
-    <div class="bg-panel p-8 rounded-lg shadow-lg text-center max-w-md w-full">
-        <h2 class="text-2xl font-bold text-white mb-2">Camera Access Required</h2>
-        <p class="text-gray-400 mb-6">This is a proctored examination. You must grant camera permissions to proceed.</p>
-        
-        <!-- Add a clickable button to force permission prompt -->
-        <button id="request-cam-btn" class="bg-gold text-navy px-6 py-3 rounded font-bold hover:bg-yellow-500 w-full mb-4">
-            Grant Camera Permission
-        </button>
+    <div id="camera-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-navy">
+        <div class="bg-panel p-8 rounded-lg shadow-lg text-center max-w-md w-full">
+            <h2 class="text-2xl font-bold text-white mb-2">Camera Access Required</h2>
+            <p class="text-gray-400 mb-6">This is a proctored examination. You must grant camera permissions to proceed.</p>
+            
+            <button id="request-cam-btn" class="bg-gold text-navy px-6 py-3 rounded font-bold hover:bg-yellow-500 w-full mb-4">
+                Grant Camera Permission
+            </button>
 
-        <div id="camera-loading" class="text-gold font-semibold hidden">Requesting camera access...</div>
-        <div id="camera-error" class="hidden text-red-400 font-semibold mt-2">Permission Denied. Please enable camera access in your browser settings.</div>
-        
-        <video id="proctor-video" autoplay muted class="hidden mt-4 rounded border border-gray-600 w-full h-48 object-cover"></video>
-        <button id="proceed-to-login" class="hidden mt-6 bg-green-600 text-white px-6 py-2 rounded font-bold w-full hover:bg-green-500">Proceed to Login →</button>
-</div>
+            <div id="camera-loading" class="text-gold font-semibold hidden">Requesting camera access...</div>
+            <div id="camera-error" class="hidden text-red-400 font-semibold mt-2">Permission Denied. Please enable camera access in your browser settings.</div>
+            
+            <video id="proctor-video" autoplay muted class="hidden mt-4 rounded border border-gray-600 w-full h-48 object-cover"></video>
+            <button id="proceed-to-login" class="hidden mt-6 bg-green-600 text-white px-6 py-2 rounded font-bold w-full hover:bg-green-500">Proceed to Login →</button>
+        </div>
+    </div>
+
     <!-- Registration / Login Form -->
     <div id="login-screen" class="hidden fixed inset-0 z-40 flex flex-col items-center justify-center bg-navy">
         <div class="bg-panel p-8 rounded-lg shadow-lg max-w-md w-full">
@@ -70,7 +71,7 @@
                     <span>⚠️ Warnings:</span> <span id="warning-count">0/3</span>
                 </div>
                 <div class="flex items-center gap-2 border border-gold text-gold px-4 py-1.5 rounded-full bg-gold/10 font-mono font-bold tracking-wider">
-                    ⏱ <span id="timer-display">01:59:59</span>
+                    ⏱ <span id="timer-display">02:00:00</span>
                 </div>
                 <button id="submit-exam-btn" class="bg-danger text-white px-4 py-1.5 rounded font-bold hover:bg-red-600 transition-colors">End Test & Submit</button>
             </div>
@@ -81,7 +82,7 @@
             <!-- Left Workspace (Questions) -->
             <div class="flex-1 flex flex-col p-6 overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
-                    <div class="text-gold text-sm font-semibold border border-gold/30 px-3 py-1 rounded-full bg-gold/5" id="question-category">Category</div>
+                    <div class="text-gold text-sm font-semibold border border-gold/30 px-3 py-1 rounded-full bg-gold/5" id="question-category">Fundamental Rights</div>
                     <div class="text-gray-400 text-sm">Question <span id="q-current-num" class="font-bold text-white">1</span> of 100</div>
                     <div class="flex gap-2">
                         <button id="mark-review-btn" class="border border-gray-500 px-3 py-1 rounded text-sm hover:bg-gray-700">📌 Mark for Review</button>
@@ -106,7 +107,7 @@
                         <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-green-500"></div> Answered (<span id="count-answered">0</span>)</div>
                         <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-red-500"></div> Unanswered (<span id="count-unanswered">100</span>)</div>
                         <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-yellow-500"></div> Marked (<span id="count-marked">0</span>)</div>
-                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-gray-600"></div> Not Visited (<span id="count-not-visited">99</span>)</div>
+                        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-gray-600"></div> Not Visited (<span id="count-not-visited">100</span>)</div>
                     </div>
                 </div>
                 <div class="p-4 flex-1 overflow-y-auto custom-scrollbar">
@@ -121,7 +122,7 @@
         <div class="bg-danger text-white p-8 rounded-lg shadow-lg text-center max-w-md w-full">
             <h2 class="text-3xl font-bold mb-4">⚠️ WARNING RECORDED</h2>
             <p class="mb-6">Tab switching, exiting fullscreen, or prohibited keystrokes detected. This violation has been logged.</p>
-            <p class="font-bold mb-6">Violations: <span id="modal-warning-count"></span>/3</p>
+            <p class="font-bold mb-6">Violations: <span id="modal-warning-count">0</span>/3</p>
             <button id="dismiss-warning-btn" class="bg-white text-danger px-6 py-2 rounded font-bold hover:bg-gray-200">Return to Exam</button>
         </div>
     </div>
@@ -129,10 +130,17 @@
     <div id="result-screen" class="hidden fixed inset-0 z-50 flex flex-col items-center justify-center bg-navy text-white">
         <h1 class="text-4xl font-bold text-gold mb-4">Exam Submitted Successfully</h1>
         <p class="text-lg text-gray-300 mb-8">Your responses have been securely logged.</p>
+        <p class="text-sm font-mono text-gold mb-4">Final Score: <span id="final-score">0</span> / 100</p>
         <p class="text-sm text-gray-500">You may now close this window.</p>
     </div>
 
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+    <!-- App Logic Script -->
     <script src="script.js"></script>
-    
 </body>
 </html>

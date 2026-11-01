@@ -4,9 +4,14 @@ const totalQuestions = 100;
 
 while (questions.length < totalQuestions) {
     questions.push({
-        q: `Placeholder Question ${questions.length + 1}. Detailed constitutional law scenario.`,
-        opts: ["Option A placeholder", "Option B placeholder", "Option C placeholder", "Option D placeholder"],
-        ans: 0,
+        q: `Constitutional Law Grand Test Question #${questions.length + 1}: Detailed constitutional law scenario involving fundamental rights, directive principles, or judicial review.`,
+        opts: [
+            "Article 14 - Right to Equality and Equal Protection of Laws",
+            "Article 21 - Protection of Life and Personal Liberty",
+            "Article 32 - Remedies for Enforcement of Fundamental Rights",
+            "Basic Structure Doctrine under Kesavananda Bharati case"
+        ],
+        ans: 3,
         cat: "General Constitutional Principles"
     });
 }
@@ -19,6 +24,7 @@ userStatus[0] = 'unanswered';
 let warnings = 0;
 let timeRemaining = 7199; // 120 minutes
 let examActive = false;
+let phoneDetectionInterval = null;
 
 // --- 3. UI SCREENS ---
 const screens = {
@@ -29,15 +35,15 @@ const screens = {
     warning: document.getElementById('warning-modal')
 };
 
-/// --- 4. CAMERA SETUP ---
-document.getElementById('request-cam-btn').addEventListener('click', async () => {
+// --- 4. CAMERA SETUP & PERMISSIONS ---
+document.getElementById('request-cam-btn')?.addEventListener('click', async () => {
     const loading = document.getElementById('camera-loading');
     const errorMsg = document.getElementById('camera-error');
     const camBtn = document.getElementById('request-cam-btn');
     
-    if(loading) loading.classList.remove('hidden');
-    if(errorMsg) errorMsg.classList.add('hidden');
-    if(camBtn) camBtn.classList.add('hidden');
+    if (loading) loading.classList.remove('hidden');
+    if (errorMsg) errorMsg.classList.add('hidden');
+    if (camBtn) camBtn.classList.add('hidden');
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -45,21 +51,21 @@ document.getElementById('request-cam-btn').addEventListener('click', async () =>
         video.srcObject = stream;
         video.classList.remove('hidden');
         
-        if(loading) loading.classList.add('hidden');
-        const proceedBtn = document.encrypt ? null : document.getElementById('proceed-to-login');
-    if(proceedBtn) {
-        proceedBtn.classList.remove('hidden');
-        // Add click handler to transition to login screen
-        proceedBtn.onclick = () => {
-            document.getElementById('camera-screen')?.classList.add('hidden');
-            document.getElementById('login-screen')?.classList.remove('hidden');
-        };
-    }
+        if (loading) loading.classList.add('hidden');
+        
+        const proceedBtn = document.getElementById('proceed-to-login');
+        if (proceedBtn) {
+            proceedBtn.classList.remove('hidden');
+            proceedBtn.onclick = () => {
+                document.getElementById('camera-screen')?.classList.add('hidden');
+                document.getElementById('login-screen')?.classList.remove('hidden');
+            };
+        }
     } catch (err) {
         console.error("Camera access error:", err);
-        if(loading) loading.classList.add('hidden');
-        if(errorMsg) errorMsg.classList.remove('hidden');
-        if(camBtn) camBtn.classList.remove('hidden');
+        if (loading) loading.classList.add('hidden');
+        if (errorMsg) errorMsg.classList.remove('hidden');
+        if (camBtn) camBtn.classList.remove('hidden');
     }
 });
 
@@ -67,17 +73,17 @@ document.getElementById('request-cam-btn').addEventListener('click', async () =>
 document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     const name = document.getElementById('candidate-name').value.trim();
     const roll = document.getElementById('candidate-roll').value.trim();
-    if(!name || !roll) return alert("Please fill in all candidate details.");
+    if (!name || !roll) return alert("Please fill in all candidate details.");
     
     window.candidateEmail = roll; 
     
     const displayRoll = document.getElementById('display-roll');
-    if(displayRoll) displayRoll.innerText = roll;
+    if (displayRoll) displayRoll.innerText = roll;
     
     screens.login.classList.add('hidden');
     screens.exam.classList.remove('hidden');
     
-    if(document.documentElement.requestFullscreen) {
+    if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(e => console.log("Fullscreen request failed:", e));
     }
     
@@ -92,9 +98,9 @@ document.getElementById('start-exam-btn')?.addEventListener('click', () => {
 // --- 6. EXAM NAVIGATION & GRID ---
 function initGrid() {
     const grid = document.getElementById('palette-grid');
-    if(!grid) return;
+    if (!grid) return;
     grid.innerHTML = '';
-    for(let i=0; i<totalQuestions; i++) {
+    for (let i = 0; i < totalQuestions; i++) {
         const btn = document.createElement('button');
         btn.innerText = i + 1;
         btn.className = `w-10 h-10 rounded text-sm font-bold flex items-center justify-center border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-500`;
@@ -106,23 +112,23 @@ function initGrid() {
 }
 
 function loadQuestion(index) {
-    if(userStatus[currentIndex] !== 'answered' && userStatus[currentIndex] !== 'marked') {
+    if (userStatus[currentIndex] !== 'answered' && userStatus[currentIndex] !== 'marked') {
         userStatus[currentIndex] = userAnswers[currentIndex] !== null ? 'answered' : 'unanswered';
     }
     currentIndex = index;
-    if(userStatus[currentIndex] === 'not-visited') userStatus[currentIndex] = 'unanswered';
+    if (userStatus[currentIndex] === 'not-visited') userStatus[currentIndex] = 'unanswered';
     
     const q = questions[currentIndex];
     const qNumEl = document.getElementById('q-current-num');
     const qCatEl = document.getElementById('question-category');
     const qTextEl = document.getElementById('question-text');
     
-    if(qNumEl) qNumEl.innerText = currentIndex + 1;
-    if(qCatEl) qCatEl.innerText = q.cat;
-    if(qTextEl) qTextEl.innerText = q.q;
+    if (qNumEl) qNumEl.innerText = currentIndex + 1;
+    if (qCatEl) qCatEl.innerText = q.cat;
+    if (qTextEl) qTextEl.innerText = q.q;
     
     const optsContainer = document.getElementById('options-container');
-    if(!optsContainer) return;
+    if (!optsContainer) return;
     optsContainer.innerHTML = '';
     
     const labels = ['A', 'B', 'C', 'D'];
@@ -147,16 +153,16 @@ function loadQuestion(index) {
     }); 
     
     const prevBtn = document.getElementById('prev-btn');
-    if(prevBtn) prevBtn.disabled = currentIndex === 0; 
+    if (prevBtn) prevBtn.disabled = currentIndex === 0; 
     updateGridUI(); 
 } 
 
 document.getElementById('next-btn')?.addEventListener('click', () => { 
-    if(currentIndex < totalQuestions - 1) loadQuestion(currentIndex + 1); 
+    if (currentIndex < totalQuestions - 1) loadQuestion(currentIndex + 1); 
 }); 
 
 document.getElementById('prev-btn')?.addEventListener('click', () => { 
-    if(currentIndex > 0) loadQuestion(currentIndex - 1); 
+    if (currentIndex > 0) loadQuestion(currentIndex - 1); 
 }); 
 
 document.getElementById('clear-option-btn')?.addEventListener('click', () => { 
@@ -168,22 +174,22 @@ document.getElementById('clear-option-btn')?.addEventListener('click', () => {
 document.getElementById('mark-review-btn')?.addEventListener('click', () => { 
     userStatus[currentIndex] = 'marked'; 
     updateGridUI(); 
-    if(currentIndex < totalQuestions - 1) loadQuestion(currentIndex + 1); 
+    if (currentIndex < totalQuestions - 1) loadQuestion(currentIndex + 1); 
 }); 
 
 function updateGridUI() { 
     let counts = { answered: 0, unanswered: 0, marked: 0, 'not-visited': 0 }; 
-    for(let i=0; i<totalQuestions; i++) { 
+    for (let i = 0; i < totalQuestions; i++) { 
         counts[userStatus[i]]++; 
         const btn = document.getElementById(`grid-btn-${i}`);
-        if(!btn) continue;
+        if (!btn) continue;
         
         btn.className = `w-10 h-10 rounded text-sm font-bold flex items-center justify-center border `;
-        if(i === currentIndex) btn.className += 'ring-2 ring-white ';
+        if (i === currentIndex) btn.className += 'ring-2 ring-white ';
         
-        if(userStatus[i] === 'answered') btn.className += 'bg-green-600 border-green-500 text-white';
-        else if(userStatus[i] === 'marked') btn.className += 'bg-yellow-600 border-yellow-500 text-white';
-        else if(userStatus[i] === 'unanswered') btn.className += 'bg-red-600 border-red-500 text-white';
+        if (userStatus[i] === 'answered') btn.className += 'bg-green-600 border-green-500 text-white';
+        else if (userStatus[i] === 'marked') btn.className += 'bg-yellow-600 border-yellow-500 text-white';
+        else if (userStatus[i] === 'unanswered') btn.className += 'bg-red-600 border-red-500 text-white';
         else btn.className += 'bg-gray-700 border-gray-600 text-gray-300';
     }
     
@@ -192,18 +198,18 @@ function updateGridUI() {
     const cMarked = document.getElementById('count-marked');
     const cNotVis = document.getElementById('count-not-visited');
     
-    if(cAns) cAns.innerText = counts.answered;
-    if(cUnans) cUnans.innerText = counts.unanswered;
-    if(cMarked) cMarked.innerText = counts.marked;
-    if(cNotVis) cNotVis.innerText = counts['not-visited'];
+    if (cAns) cAns.innerText = counts.answered;
+    if (cUnans) cUnans.innerText = counts.unanswered;
+    if (cMarked) cMarked.innerText = counts.marked;
+    if (cNotVis) cNotVis.innerText = counts['not-visited'];
 }
 
 function startTimer() {
     const display = document.getElementById('timer-display');
-    if(!display) return;
+    if (!display) return;
     const intv = setInterval(() => {
-        if(!examActive) return clearInterval(intv);
-        if(timeRemaining <= 0) {
+        if (!examActive) return clearInterval(intv);
+        if (timeRemaining <= 0) {
             clearInterval(intv);
             submitExam();
             return;
@@ -216,27 +222,30 @@ function startTimer() {
     }, 1000); 
 } 
 
-// --- EXAM SUBMISSION & LEADERBOARD SYNC ---
+// --- 7. EXAM SUBMISSION & LEADERBOARD SYNC ---
 function submitExam() {
     examActive = false;
+    if (phoneDetectionInterval) clearInterval(phoneDetectionInterval);
+    
     screens.exam.classList.add('hidden');
     screens.warning.classList.add('hidden');
     screens.result.classList.remove('hidden');
     
-    if(document.fullscreenElement) document.exitFullscreen().catch(e => console.log(e));
+    if (document.fullscreenElement) document.exitFullscreen().catch(e => console.log(e));
     
     const video = document.getElementById('proctor-video');
-    if(video && video.srcObject) {
+    if (video && video.srcObject) {
         video.srcObject.getTracks().forEach(track => track.stop());
     }
 
-    // Calculate total score
     let score = 0;
     userAnswers.forEach((ans, idx) => {
-        if(ans === questions[idx].ans) score++;
+        if (ans === questions[idx].ans) score++;
     });
 
-    // Save Result to Firestore for Admin Leaderboard
+    const finalScoreEl = document.getElementById('final-score');
+    if (finalScoreEl) finalScoreEl.innerText = score;
+
     if (db && window.candidateEmail) {
         db.collection("exam_results").add({
             name: document.getElementById('candidate-name')?.value || "Anonymous",
@@ -247,6 +256,12 @@ function submitExam() {
         }).catch(err => console.error("Error saving exam result:", err));
     }
 }
+
+document.getElementById('submit-exam-btn')?.addEventListener('click', () => {
+    if (confirm("Are you sure you want to finalize and submit your test?")) {
+        submitExam();
+    }
+});
 
 // --- 8. DUAL-AI PROCTORING LOGIC (FACE & DEVICE DETECTION) ---
 let db;
@@ -261,20 +276,16 @@ let objectDetector = null;
 
 async function initProctoring() {
     const videoElement = document.getElementById('proctor-video');
-    if(!videoElement) return console.error("Proctor video element not found");
+    if (!videoElement) return console.error("Proctor video element not found");
 
-    // 1. Initialize Mobile Phone Detection (COCO-SSD)
     if (typeof cocoSsd !== 'undefined') {
         try {
             objectDetector = await cocoSsd.load();
             console.log("Device detection AI loaded.");
             
-            // Scan for phones every 1.5 seconds to save CPU
             phoneDetectionInterval = setInterval(async () => {
                 if (!examActive || !objectDetector) return;
                 const predictions = await objectDetector.detect(videoElement);
-                
-                // Check if 'cell phone' is detected with a confidence score > 50%
                 const phoneDetected = predictions.some(p => p.class === 'cell phone' && p.score > 0.5);
                 
                 if (phoneDetected) {
@@ -285,11 +296,8 @@ async function initProctoring() {
         } catch (e) {
             console.error("Failed to load device detection AI:", e);
         }
-    } else {
-        console.error("TensorFlow COCO-SSD missing from index.html");
     }
 
-    // 2. Initialize Face Tracking (FaceMesh)
     if (typeof FaceMesh !== 'undefined') {
         try {
             const faceMesh = new FaceMesh({
@@ -317,7 +325,6 @@ async function initProctoring() {
                     const landmarks = results.multiFaceLandmarks[0];
                     const leftEar = landmarks[234];
                     const rightEar = landmarks[454];
-
                     const faceTurnedAway = Math.abs(leftEar.z - rightEar.z) > 0.15;
                     
                     if (faceTurnedAway) {
@@ -341,7 +348,6 @@ async function initProctoring() {
                 height: 480
             });
             camera.start();
-            console.log("Face tracking AI initialized successfully.");
         } catch (err) {
             console.error("Error initializing Face AI:", err);
         }
@@ -349,16 +355,16 @@ async function initProctoring() {
 }
 
 function triggerWarning() { 
-    if(!examActive) return; 
+    if (!examActive) return; 
     warnings++; 
     
     const warnCount = document.getElementById('warning-count');
     const modalWarnCount = document.getElementById('modal-warning-count');
     
-    if(warnCount) warnCount.innerText = `${warnings}/3`;
-    if(modalWarnCount) modalWarnCount.innerText = warnings;
+    if (warnCount) warnCount.innerText = `${warnings}/3`;
+    if (modalWarnCount) modalWarnCount.innerText = warnings;
     
-    if(warnings >= 3) {
+    if (warnings >= 3) {
         alert("Maximum violations reached. Auto-submitting exam.");
         submitExam();
     } else {
@@ -368,12 +374,12 @@ function triggerWarning() {
 
 document.getElementById('dismiss-warning-btn')?.addEventListener('click', () => {
     screens.warning.classList.add('hidden');
-    if(document.documentElement.requestFullscreen && examActive) {
+    if (document.documentElement.requestFullscreen && examActive) {
         document.documentElement.requestFullscreen().catch(e => console.log(e));
     }
 });
 
-// --- 9. BROWSER CHEAT TRIGGERS (STRICT) ---
+// --- 9. STRICT BROWSER CHEAT TRIGGERS ---
 window.addEventListener("blur", () => {
     if (examActive) {
         triggerWarning();
@@ -405,14 +411,14 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener('contextmenu', (e) => {
-    if(examActive) {
+    if (examActive) {
         e.preventDefault();
         triggerWarning();
     }
 });
 
 document.addEventListener('copy', (e) => {
-    if(examActive) {
+    if (examActive) {
         e.preventDefault();
         triggerWarning();
     }
@@ -420,7 +426,7 @@ document.addEventListener('copy', (e) => {
 
 // --- 10. FIRESTORE SNAPSHOT LOGGING ---
 function captureAndUploadViolationSnapshot(violationType) {
-    if (!db) return console.error("Cannot upload violation. Firebase not initialized.");
+    if (!db) return;
     
     const videoElement = document.getElementById('proctor-video');
     if (!videoElement) return;
@@ -456,19 +462,7 @@ function captureAndUploadViolationSnapshot(violationType) {
                 console.error("Error uploading violation snapshot:", error);
             });
         } catch (error) {
-            console.error("Firebase Storage failed. Snapshot not saved.", error);
+            console.error("Firebase Storage failed.", error);
         }
     }, 'image/jpeg', 0.85); 
 }
-document.getElementById('request-cam-btn')?.addEventListener('click', async () => {
-    alert("Button clicked! Attempting to access camera..."); // Test alert
-    
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = document.getElementById('proctor-video');
-        video.srcObject = stream;
-        video.classList.remove('hidden');
-    } catch (err) {
-        alert("Camera error: " + err.message); // Will show exact error if blocked
-    }
-});
