@@ -175,7 +175,6 @@
                 dashboard.classList.remove('hidden');
                 document.getElementById('verified-email').innerText = user.email;
                 
-                // Start live monitoring and leaderboard
                 startLiveCheatMonitoring();
                 startLeaderboardListener();
             } else {
@@ -202,29 +201,83 @@
             return;
         }
 
-        if (email !== AUTHORIZED_ADMIN) {
-            alert("Unauthorized Email address.");
-            return;
-        }
-
-        msgEl.innerText = "Authenticating...";
-        msgEl.classList.remove('hidden', 'text-red-400');
-        msgEl.classList.add('text-green-400');
-
         auth.signInWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                // Successfully logged in; onAuthStateChanged will handle UI switch
-                msgEl.classList.add('hidden');
-            })
             .catch((error) => {
                 msgEl.innerText = "Login Failed: " + error.message;
                 msgEl.classList.replace('text-green-400', 'text-red-400');
+                msgEl.classList.remove('hidden');
             });
     });
 
     // --- LOGOUT ---
     document.getElementById('logout-btn').addEventListener('click', () => {
         auth.signOut();
+    });
+
+    // --- MANUAL QUESTION ENTRY TO FIRESTORE ---
+    document.getElementById('save-q-btn').addEventListener('click', async () => {
+        const qText = document.getElementById('admin-q-text').value.trim();
+        const optA = document.getElementById('admin-opt-0').value.trim();
+        const optB = document.getElementById('admin-opt-1').value.trim();
+        const optC = document.getElementById('admin-opt-2').value.trim();
+        const optD = document.getElementById('admin-opt-3').value.trim();
+        const correct = parseInt(document.getElementById('admin-correct').value);
+        const category = document.getElementById('admin-category').value.trim() || "General";
+
+        if (!qText || !optA || !optB || !optC || !optD) {
+            return alert("Please fill in the question text and all 4 options.");
+        }
+
+        try {
+            await db.collection("question_bank").add({
+                q: qText,
+                opts: [optA, optB, optC, optD],
+                ans: correct,
+                cat: category,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            alert("Question successfully saved to cloud database!");
+            
+            // Clear inputs
+            document.getElementById('admin-q-text').value = '';
+            document.getElementById('admin-opt-0').value = '';
+            document.getElementById('admin-opt-1').value = '';
+            document.getElementById('admin-opt-2').value = '';
+            document.getElementById('admin-opt-3').value = '';
+            document.getElementById('admin-category').value = '';
+        } catch (err) {
+            alert("Error saving question: " + err.message);
+        }
+    });
+
+    // --- BULK IMPORT QUESTIONS TO FIRESTORE ---
+    document.getElementById('import-bulk-btn').addEventListener('click', async () => {
+        const rawText = document.getElementById('bulk-json-input').value.trim();
+        if (!rawText) return alert("Please paste your JSON questions data first.");
+        
+        try {
+            const newQuestions = JSON.parse(rawText);
+            if (!Array.isArray(newQuestions)) throw new Error("JSON must be an array of questions.");
+
+            const batch = db.batch();
+            newQuestions.forEach((qData) => {
+                const docRef = db.collection("question_bank").doc();
+                batch.set(docRef, {
+                    q: qData.q,
+                    opts: qData.opts,
+                    ans: qData.ans,
+                    cat: qData.cat || "General",
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+
+            await batch.commit();
+            alert(`Successfully imported ${newQuestions.length} questions to Firebase cloud database!`);
+            document.getElementById('bulk-json-input').value = '';
+        } catch (err) {
+            alert("Import Error: " + err.message);
+        }
     });
 
     // --- REAL-TIME LIVE CHEAT MONITORING ---
@@ -264,8 +317,6 @@
                   `;
                   container.appendChild(card);
               });
-          }, (error) => {
-              console.error("Error fetching violation logs: ", error);
           });
     }
 
@@ -307,27 +358,8 @@
                   tbody.appendChild(row);
                   rank++;
               });
-          }, (error) => {
-              console.error("Error loading leaderboard:", error);
           });
     }
-
-    // --- BULK IMPORT LOGIC ---
-    document.getElementById('import-bulk-btn').addEventListener('click', () => {
-        const rawText = document.getElementById('bulk-json-input').value.trim();
-        if (!rawText) return alert("Please paste your JSON questions data first.");
-        try {
-            const newQuestions = JSON.parse(rawText);
-            let currentQs = JSON.parse(localStorage.getItem('vidhiora_qs') || '[]');
-            currentQs = [...currentQs, ...newQuestions];
-            localStorage.setItem('vidhiora_qs', JSON.stringify(currentQs));
-            alert(`Successfully imported ${newQuestions.length} questions!`);
-            document.getElementById('bulk-json-input').value = '';
-        } catch (err) {
-            alert("JSON Error: " + err.message);
-        }
-    });
 </script>
 </body>
-
 </html>

@@ -1,41 +1,79 @@
-// --- 1. LOAD QUESTIONS FROM BANK ---
-let questions = JSON.parse(localStorage.getItem('vidhiora_qs') || '[]');
-const totalQuestions = 100;
-
-while (questions.length < totalQuestions) {
-    questions.push({
-        q: `Constitutional Law Grand Test Question #${questions.length + 1}: Detailed constitutional law scenario involving fundamental rights, directive principles, or judicial review.`,
-        opts: [
-            "Article 14 - Right to Equality and Equal Protection of Laws",
-            "Article 21 - Protection of Life and Personal Liberty",
-            "Article 32 - Remedies for Enforcement of Fundamental Rights",
-            "Basic Structure Doctrine under Kesavananda Bharati case"
-        ],
-        ans: 3,
-        cat: "General Constitutional Principles"
-    });
-}
-
-// --- 2. EXAM STATE VARIABLES ---
+// --- 1. LOAD QUESTIONS FROM FIRESTORE CLOUD (WITH FALLBACKS) ---
+let questions = [];
+let totalQuestions = 0;
+let userAnswers = [];
+let userStatus = [];
 let currentIndex = 0;
-let userAnswers = new Array(totalQuestions).fill(null);
-let userStatus = new Array(totalQuestions).fill('not-visited');
-userStatus[0] = 'unanswered';
 let warnings = 0;
 let timeRemaining = 7199; // 120 minutes
 let examActive = false;
 let phoneDetectionInterval = null;
 
-// --- 3. UI SCREENS ---
-const screens = {
+// Initialize Firebase Firestore reference safely
+let db;
+try {
+    db = firebase.firestore();
+} catch (e) {
+    console.error("Firebase Firestore is not initialized.");
+}
+
+// Asynchronously fetch questions from Firebase Cloud Database
+async function initializeExamQuestions() {
+    try {
+        if (db) {
+            const snapshot = await db.collection("question_bank").get();
+            if (!snapshot.empty) {
+                snapshot.forEach(doc => {
+                    questions.push(doc.data());
+                });
+                console.log(`Loaded ${questions.length} questions from Firestore cloud.`);
+            }
+        }
+    } catch (e) {
+        console.error("Error fetching cloud questions:", e);
+    }
+
+    // Fallback 1: Check localStorage if Firestore returned nothing
+    if (questions.length === 0) {
+        questions = JSON.parse(localStorage.getItem('vidhiora_qs') || '[]');
+    }
+
+    // Fallback 2: Push default placeholders if completely empty
+    if (questions.length === 0) {
+        while (questions.length < 100) {
+            questions.push({
+                q: `Constitutional Law Grand Test Question #${questions.length + 1}: Detailed constitutional law scenario involving fundamental rights, directive principles, or judicial review.`,
+                opts: [
+                    "Article 14 - Right to Equality and Equal Protection of Laws",
+                    "Article 21 - Protection of Life and Personal Liberty",
+                    "Article 32 - Remedies for Enforcement of Fundamental Rights",
+                    "Basic Structure Doctrine under Kesavananda Bharati case"
+                ],
+                ans: 3,
+                cat: "General Constitutional Principles"
+            });
+        }
+    }
+
+    totalQuestions = questions.length;
+    userAnswers = new Array(totalQuestions).fill(null);
+    userStatus = new Array(totalQuestions).fill('not-visited');
+    if (totalQuestions > 0) userStatus[0] = 'unanswered';
+}
+
+// Trigger question loading on script execution
+initializeExamQuestions();
+
+// --- 2. UI SCREENS HELPER ---
+const getScreens = () => ({
     camera: document.getElementById('camera-screen'),
     login: document.getElementById('login-screen'),
     exam: document.getElementById('exam-screen'),
     result: document.getElementById('result-screen'),
     warning: document.getElementById('warning-modal')
-};
+});
 
-// --- 4. CAMERA SETUP & INDEPENDENT TRANSITION ---
+// --- 3. CAMERA SETUP & INDEPENDENT TRANSITION ---
 document.getElementById('request-cam-btn')?.addEventListener('click', async () => {
     const loading = document.getElementById('camera-loading');
     const errorMsg = document.getElementById('camera-error');
@@ -65,13 +103,13 @@ document.getElementById('request-cam-btn')?.addEventListener('click', async () =
     }
 });
 
-// ALWAYS active click listener (not dependent on async camera state)
+// ALWAYS active click listener
 document.getElementById('proceed-to-login')?.addEventListener('click', () => {
     document.getElementById('camera-screen')?.classList.add('hidden');
     document.getElementById('login-screen')?.classList.remove('hidden');
 });
 
-// --- 5. START EXAM (Safe with Element Checks) ---
+// --- 4. START EXAM (Safe with Element Checks) ---
 document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     const nameInput = document.getElementById('candidate-name');
     const uniInput = document.getElementById('candidate-university');
@@ -118,7 +156,8 @@ document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     
     setTimeout(initProctoring, 1000); 
 });
-// --- 6. EXAM NAVIGATION & GRID ---
+
+// --- 5. EXAM NAVIGATION & GRID ---
 function initGrid() {
     const grid = document.getElementById('palette-grid');
     if (!grid) return;
@@ -142,12 +181,14 @@ function loadQuestion(index) {
     if (userStatus[currentIndex] === 'not-visited') userStatus[currentIndex] = 'unanswered';
     
     const q = questions[currentIndex];
+    if (!q) return;
+
     const qNumEl = document.getElementById('q-current-num');
     const qCatEl = document.getElementById('question-category');
     const qTextEl = document.getElementById('question-text');
     
     if (qNumEl) qNumEl.innerText = currentIndex + 1;
-    if (qCatEl) qCatEl.innerText = q.cat;
+    if (qCatEl) qCatEl.innerText = q.cat || "General";
     if (qTextEl) qTextEl.innerText = q.q;
     
     const optsContainer = document.getElementById('options-container');
@@ -245,14 +286,15 @@ function startTimer() {
     }, 1000); 
 } 
 
-// --- 7. EXAM SUBMISSION & LEADERBOARD SYNC ---
+// --- 6. EXAM SUBMISSION & LEADERBOARD SYNC ---
 function submitExam() {
     examActive = false;
     if (phoneDetectionInterval) clearInterval(phoneDetectionInterval);
     
-    screens.exam.classList.add('hidden');
-    screens.warning.classList.add('hidden');
-    screens.result.classList.remove('hidden');
+    const screens = getScreens();
+    if (screens.exam) screens.exam.classList.add('hidden');
+    if (screens.warning) screens.warning.classList.add('hidden');
+    if (screens.result) screens.result.classList.remove('hidden');
     
     if (document.fullscreenElement) document.exitFullscreen().catch(e => console.log(e));
     
@@ -263,7 +305,7 @@ function submitExam() {
 
     let score = 0;
     userAnswers.forEach((ans, idx) => {
-        if (ans === questions[idx].ans) score++;
+        if (ans !== null && questions[idx] && ans === questions[idx].ans) score++;
     });
 
     const finalScoreEl = document.getElementById('final-score');
@@ -286,14 +328,7 @@ document.getElementById('submit-exam-btn')?.addEventListener('click', () => {
     }
 });
 
-// --- 8. DUAL-AI PROCTORING LOGIC (FACE & DEVICE DETECTION) ---
-let db;
-try {
-    db = firebase.firestore();
-} catch (e) {
-    console.error("Firebase Firestore is not initialized.");
-}
-
+// --- 7. DUAL-AI PROCTORING LOGIC (FACE & DEVICE DETECTION) ---
 let absenceTimer = 0;
 let objectDetector = null;
 
@@ -387,22 +422,24 @@ function triggerWarning() {
     if (warnCount) warnCount.innerText = `${warnings}/3`;
     if (modalWarnCount) modalWarnCount.innerText = warnings;
     
+    const screens = getScreens();
     if (warnings >= 3) {
         alert("Maximum violations reached. Auto-submitting exam.");
         submitExam();
     } else {
-        screens.warning.classList.remove('hidden');
+        if (screens.warning) screens.warning.classList.remove('hidden');
     }
 }
 
 document.getElementById('dismiss-warning-btn')?.addEventListener('click', () => {
-    screens.warning.classList.add('hidden');
+    const screens = getScreens();
+    if (screens.warning) screens.warning.classList.add('hidden');
     if (document.documentElement.requestFullscreen && examActive) {
         document.documentElement.requestFullscreen().catch(e => console.log(e));
     }
 });
 
-// --- 9. STRICT BROWSER CHEAT TRIGGERS ---
+// --- 8. STRICT BROWSER CHEAT TRIGGERS ---
 window.addEventListener("blur", () => {
     if (examActive) {
         triggerWarning();
@@ -447,7 +484,7 @@ document.addEventListener('copy', (e) => {
     }
 });
 
-// --- 10. FIRESTORE SNAPSHOT LOGGING ---
+// --- 9. FIRESTORE SNAPSHOT LOGGING ---
 function captureAndUploadViolationSnapshot(violationType) {
     if (!db) return;
     
