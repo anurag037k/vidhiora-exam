@@ -174,5 +174,30 @@
 
     <!-- App Logic Script -->
     <script src="script.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+    <!-- Firebase Initialization (Fixes "Firebase Firestore is not initialized") -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCm-SD4-nbJcAI3WdmwzLdrenJBg7IW7E4",
+            authDomain: "vidhiora-exam-c50d6.firebaseapp.com",
+            projectId: "vidhiora-exam-c50d6",
+            storageBucket: "vidhiora-exam-c50d6.firebasestorage.app",
+            messagingSenderId: "248789284963",
+            appId: "1:248789284963:web:74ac4c1160d36c996ae056",
+            measurementId: "G-EMLH73DGXZ"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+    </script>
+
+    <!-- App Logic Script -->
+    <script src="script.js"></script>
 </body>
 </html>
