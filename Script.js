@@ -71,10 +71,22 @@ document.getElementById('proceed-to-login')?.addEventListener('click', () => {
     document.getElementById('login-screen')?.classList.remove('hidden');
 });
 
-// --- 5. START EXAM (Foolproof Screen Transition) ---
+// --- 5. START EXAM (Safe with Element Checks) ---
 document.getElementById('start-exam-btn')?.addEventListener('click', () => {
-    const name = document.getElementById('candidate-name')?.value.trim();
-    const university = document.getElementById('candidate-university')?.value.trim();
+    const nameInput = document.getElementById('candidate-name');
+    const uniInput = document.getElementById('candidate-university');
+    
+    if (!nameInput) {
+        alert("Error: Element with id 'candidate-name' not found in HTML!");
+        return;
+    }
+    if (!uniInput) {
+        alert("Error: Element with id 'candidate-university' not found in HTML!");
+        return;
+    }
+    
+    const name = nameInput.value.trim();
+    const university = uniInput.value.trim();
     
     if (!name || !university) {
         alert("Please fill in both your Full Name and University Name.");
@@ -86,16 +98,13 @@ document.getElementById('start-exam-btn')?.addEventListener('click', () => {
     const displayRoll = document.getElementById('display-roll');
     if (displayRoll) displayRoll.innerText = university;
     
-    // Explicitly manipulate display styles to override any stubborn CSS conflicts
     const loginScreen = document.getElementById('login-screen');
     const examScreen = document.getElementById('exam-screen');
     
-    if (loginScreen) {
-        loginScreen.style.display = 'none';
-    }
+    if (loginScreen) loginScreen.style.display = 'none';
     if (examScreen) {
         examScreen.classList.remove('hidden');
-        examScreen.style.display = 'flex'; // Force flex display to render correctly
+        examScreen.style.display = 'flex';
     }
     
     if (document.documentElement.requestFullscreen) {
