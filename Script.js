@@ -35,7 +35,7 @@ const screens = {
     warning: document.getElementById('warning-modal')
 };
 
-// --- 4. CAMERA SETUP & PERMISSIONS ---
+// --- 4. CAMERA SETUP & INDEPENDENT TRANSITION ---
 document.getElementById('request-cam-btn')?.addEventListener('click', async () => {
     const loading = document.getElementById('camera-loading');
     const errorMsg = document.getElementById('camera-error');
@@ -48,25 +48,27 @@ document.getElementById('request-cam-btn')?.addEventListener('click', async () =
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         const video = document.getElementById('proctor-video');
-        video.srcObject = stream;
-        video.classList.remove('hidden');
-        
+        if (video) {
+            video.srcObject = stream;
+            video.classList.remove('hidden');
+        }
         if (loading) loading.classList.add('hidden');
         
-        const proceedBtn = document.getElementById('proceed-to-login');
-        if (proceedBtn) {
-            proceedBtn.classList.remove('hidden');
-            proceedBtn.onclick = () => {
-                document.getElementById('camera-screen')?.classList.add('hidden');
-                document.getElementById('login-screen')?.classList.remove('hidden');
-            };
-        }
+        // Immediately reveal the proceed button
+        document.getElementById('proceed-to-login')?.classList.remove('hidden');
+        
     } catch (err) {
         console.error("Camera access error:", err);
         if (loading) loading.classList.add('hidden');
         if (errorMsg) errorMsg.classList.remove('hidden');
-        if (camBtn) camBtn.classList.remove('hidden');
+        if (camBtn) camBtn.classList.add('hidden');
     }
+});
+
+// ALWAYS active click listener (not dependent on async camera state)
+document.getElementById('proceed-to-login')?.addEventListener('click', () => {
+    document.getElementById('camera-screen')?.classList.add('hidden');
+    document.getElementById('login-screen')?.classList.remove('hidden');
 });
 
 // --- 5. START EXAM ---
